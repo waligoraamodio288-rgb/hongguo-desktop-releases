@@ -1,23 +1,59 @@
 # 红果桌面版
 
-非官方个人 Windows 桌面项目，支持浏览与搜索短剧、收藏、观看进度、倍速、切集和自动连播。
+在 Windows 电脑上找剧、接着上次看。支持搜索、收藏、本机观看进度、选集、倍速和自动连播。
 
-**1.0.0 已发布。** 适用于 Windows 10/11 64 位系统。
+**免费个人项目 · 非官方 · 当前公开版本 1.0.0**
 
-- [产品网站与下载](https://channel-ai-practice-wj.waligoraamodio288.chatgpt.site/)
-- [直接下载安装程序](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.0/hongguo-1.0.0-windows-x86_64-setup.exe)
-- [版本说明与所有附件](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.0)
+**[下载 Windows 安装程序](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.0/hongguo-1.0.0-windows-x86_64-setup.exe)**　｜　[安装说明](https://channel-ai-practice-wj.waligoraamodio288.chatgpt.site/help/install/?utm_source=github)　｜　[产品网站](https://channel-ai-practice-wj.waligoraamodio288.chatgpt.site/?utm_source=github)
 
-安装程序约 103 MiB。已有可用 WebView2 时直接使用，缺失时会联网额外下载并安装运行环境。
+Windows 10 / 11 **x64（64 位）** · 安装包 **102.7 MiB**。普通使用只需下载 `.exe`，不需要下载源码 ZIP、`.sig` 或 `latest.json`。
 
-当前未配置 Windows 发布者代码签名，下载或运行时可能出现未知发布者、SmartScreen 提示，部分系统安全策略可能拦截。应用内更新使用固定公钥验证更新包签名。更新签名不等于 Windows 发布者代码签名。
+## 软件界面
 
-软件启动后可检查新版本，也可以在设置中手动检查；仅在用户点击更新后下载安装。
+![桌面应用的搜索、分类、收藏和观看记录入口](assets/home.png)
 
-## 附件与第三方组件
+*开发验收期真实截图；不是当前公开版本重新拍摄的截图，界面细节以安装版本为准。*
 
-每个版本包含安装程序、更新签名、latest.json、SHA256SUMS.txt，以及本版本所需的第三方对应源码附件。普通使用不需要下载源码 ZIP；安装目录 backend/licenses 保留第三方许可、来源、构建材料和声明。
+## 三步开始使用
 
-本仓库用于发行，不包含私有应用源码或签名私钥。本项目与红果短剧及其运营方无官方合作关系。内容与播放可用性受来源和网络影响。
+1. 通过上方链接下载 `hongguo-1.0.0-windows-x86_64-setup.exe`。
+2. 按安装程序完成安装。已有可用 WebView2 时会复用，缺失时需要额外联网安装组件。
+3. 打开应用，浏览分类或搜索剧名，进入详情后播放。观看进度保存在桌面端，不代表同步手机红果 App 账号和历史。
 
-维护：渠道有数。反馈：WaligoraAmodio288@gmail.com。反馈请附系统版本、应用版本和问题步骤，无需发送账号凭证或私人观看记录。
+老板键可以在设置里配置，用于隐藏和恢复窗口；**不会自动暂停或静音**。
+
+## 当前已知反馈
+
+| 问题 | 1.0.0 状态与处理 |
+| --- | --- |
+| [切换下一集后倍速失效 #3](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/3) | 当前公开安装包尚未包含修复。可先切回 1 倍再选择需要的倍速；仍有问题请补充系统、版本和步骤。 |
+| [弹幕功能建议 #2](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/2) | 已记录需求，暂未承诺支持或上线时间。 |
+| [进度条显隐与外部播放器 #1](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/1) | 原 Issue 已关闭；关闭记录没有关联修复提交，不能据此认定所有现象已经解决。相同问题可新建报告并附复现步骤。 |
+
+## 使用反馈
+
+- 遇到故障：[提交问题](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/new?template=bug-report.yml)。请说明系统、软件版本、操作步骤、预期和实际结果。
+- 有功能想法：[提出建议](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/new?template=feature-request.yml)。先描述使用场景，方便判断改进方向。
+- 不使用 GitHub 也可发邮件：[WaligoraAmodio288@gmail.com](mailto:WaligoraAmodio288@gmail.com)。如果愿意，也请说明在哪里看到本软件、是否成功播放或再次使用。
+
+来源可以不填。请不要公开账号凭证、令牌、私人观看记录，截图时遮住无关个人信息。
+
+## 下载与安装说明
+
+当前版本尚未配置 Windows 发布者代码签名，系统可能显示未知发布者或 SmartScreen 提示。请核对下载来源与文件，不要关闭系统防护；某些系统策略可能限制安装。
+
+安装器大小：`107726166` 字节。SHA-256：
+
+```text
+bd20c14fcf7ac393bed3ba7e5f94a09313cbb543e435ab928245b0642ddb3756
+```
+
+摘要用于核对文件一致性，不能代替发布者身份认证。应用内更新使用固定公钥验证更新包签名；更新签名与 Windows 发布者代码签名不同。软件启动后可以检查版本，也可在设置中手动检查，仅在用户点击更新后下载安装。
+
+[1.0.0 版本说明与附件](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.0) · [全部版本](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases)
+
+## 关于本仓库
+
+这是**公开发行与反馈仓库**，不包含私有应用源码或签名私钥，不代表应用源码已开源。每个版本保留安装器、更新签名、`latest.json`、摘要文件及本版本所需第三方对应源码附件；第三方许可、来源和声明也保留在安装目录 `backend/licenses`。
+
+由渠道有数维护。与红果短剧及其运营方无官方合作关系；相关品牌与内容归各自权利方所有，内容和播放可用性受来源及网络情况影响。
