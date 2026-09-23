@@ -17,7 +17,7 @@ Windows 10 / 11 **x64（64 位）** · 安装包 **102.8 MiB**。普通使用只
 ## 三步开始使用
 
 1. 通过上方链接下载 `hongguo-1.0.2-windows-x86_64-setup.exe`。
-2. 按安装程序完成安装。已有可用 WebView2 时会复用，缺失时安装程序需联网补齐；若补装失败或启动提示缺少 WebView2，可到[微软官方 WebView2 Runtime 下载页](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)安装 Evergreen Runtime，再重试安装或启动。
+2. 按安装程序完成安装。已有可用 WebView2 时会复用，缺失时安装程序需联网补齐；若在线补装失败、启动提示缺少 WebView2，或已知网络不稳定，可到[微软官方 WebView2 Runtime 下载页](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)选择 **Evergreen Standalone Installer（x64）** 安装，再重试红果安装或启动。若安装进度长时间没有变化，请记录界面和发生时间后反馈。
 3. 打开应用，浏览分类或搜索剧名，进入详情后播放。观看进度保存在桌面端，不代表同步手机红果 App 账号和历史。
 
 老板键可以在设置里配置，用于隐藏和恢复窗口；**不会自动暂停或静音**。
