@@ -19,9 +19,10 @@ body:
     id: version
     attributes:
       label: 软件版本
-      placeholder: 例如 1.0.0，可在应用设置中查看
+      description: 如果还没装好或无法启动，可以留空；已安装时可在应用设置中查看。
+      placeholder: 例如 1.0.2
     validations:
-      required: true
+      required: false
   - type: textarea
     id: steps
     attributes:
