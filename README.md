@@ -1,8 +1,8 @@
-# 红果短剧电脑版（非官方 Windows 桌面版）
+# 红果短剧电脑版｜红果桌面版
 
 在 Windows 电脑上找剧、接着上次看。支持搜索、收藏、本机观看进度、选集、倍速和自动连播。
 
-**免费个人项目 · 非官方 · 当前公开版本 1.0.2**
+**由渠道有数独立维护 · 免费使用 · 当前公开版本 1.0.2**
 
 **[下载 Windows 安装程序](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.2/hongguo-1.0.2-windows-x86_64-setup.exe)**　｜　[三步安装](#三步开始使用)　｜　[下载与安装说明](#下载与安装说明)　｜　[全部版本](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases)
 
