@@ -1,0 +1,27 @@
+/* Append after generated overrides. All rules are scoped to the selected theme. */
+html[data-local-theme="dark"] {
+  --ink: #e8e9ed;
+  --muted: #b8bdc7;
+  --paper: #16171b;
+  --line: #454c59;
+  color-scheme: dark;
+  background: #16171b;
+  color: #e8e9ed;
+  scrollbar-color: #68717f #1c1e23;
+}
+html[data-local-theme="dark"] body { background: #16171b; color: #e8e9ed; }
+html[data-local-theme="dark"] .topbar,
+html[data-local-theme="dark"] .sidebar { background: #1c1e23; }
+html[data-local-theme="dark"] .settings-row button,
+html[data-local-theme="dark"] .settings-row select {
+  background: #24272e; color: #e8e9ed; border-color: #606a79;
+}
+html[data-local-theme="dark"] .main-nav button.active { background: transparent; color: #fb7299; }
+html[data-local-theme="dark"] .primary,
+html[data-local-theme="dark"] .update-notice button:first-child { background: #fb7299; color: #241018; }
+html[data-local-theme="dark"] input::placeholder { color: #b8bdc7; }
+html[data-local-theme="dark"] input { caret-color: #fb7299; }
+html[data-local-theme="dark"] ::selection { background: #71374d; color: #fff; }
+html[data-local-theme="dark"] :focus-visible { outline-color: #fb7299; }
+html[data-local-theme="dark"] ::-webkit-scrollbar-track { background: #1c1e23; }
+html[data-local-theme="dark"] ::-webkit-scrollbar-thumb { background: #68717f; }

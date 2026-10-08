@@ -1,0 +1,14 @@
+--- a/backend/desktop_bootstrap.py
++++ b/backend/desktop_bootstrap.py
+@@ -218,8 +218,10 @@
+         port = announce_endpoint(listener)
+         # The signer owns its OS-assigned port continuously from bind to exit.
+         stage("signer_spawn")
++        from windows_java_paths import java_runtime
++        jre = java_runtime(root, data)
+         signer = subprocess.Popen(
+-            [str(root / "jre/bin/java.exe"), "-Djava.net.preferIPv4Stack=true", "--add-opens", "java.base/java.lang=ALL-UNNAMED",
++            [str(jre / "bin/java.exe"), "-Djava.net.preferIPv4Stack=true", "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+              "-Xmx512m", "-XX:+ExitOnOutOfMemoryError", "-cp", "unidbg-sign.jar",
+              "com.hongguo.sign.FqTrace", "serve", "0"],
+             cwd=root / "sign", stdin=subprocess.DEVNULL,
