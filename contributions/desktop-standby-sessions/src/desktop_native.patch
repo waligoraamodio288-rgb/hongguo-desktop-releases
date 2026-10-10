@@ -1,0 +1,85 @@
+--- a/backend/desktop_native.py
++++ b/backend/desktop_native.py
+@@ -168,9 +168,14 @@
+         with self.guard:
+             if job.cancelled.is_set():
+                 raise RuntimeError("Native job cancelled")
+-            for previous in list(self.sessions.values()):
+-                previous.close()
+-            self.sessions.clear()
++            parent = getattr(job, "prewarm_parent", None)
++            if parent:
++                if (self.sessions and parent not in self.sessions) or len(self.sessions) >= 2:
++                    raise RuntimeError("Standby parent unavailable")
++            else:
++                for previous in list(self.sessions.values()):
++                    previous.close()
++                self.sessions.clear()
+             session = NativeSession(self, job, self.parent_window())
+             self.sessions[job.id] = session
+             try:
+@@ -193,7 +198,37 @@
+             session = self.sessions.get(identifier)
+             if not session or session.stop.is_set():
+                 raise ValueError("Native session unavailable")
+-            return session.submit(body)
++            previous_states = []
++            try:
++                if getattr(session.job, "prewarm_parent", None):
++                    if body.get("visible") is True:
++                        if not session.snapshot().get("outputReady"):
++                            raise ValueError("Standby frame unavailable")
++                        for identifier_, previous in self.sessions.items():
++                            if identifier_ != identifier:
++                                before = previous.snapshot()
++                                previous_states.append((previous, bool(before.get("paused", True))))
++                                revision = previous.submit({"paused": True})
++                                until = time.monotonic() + .3
++                                while time.monotonic() < until:
++                                    value = previous.snapshot()
++                                    if value.get("paused") and value.get("revision", 0) >= revision:
++                                        break
++                                    time.sleep(.005)
++                                else:
++                                    raise ValueError("Previous audio not paused")
++                    elif body.get("paused") is False or body.get("muted") is False:
++                        raise ValueError("Standby must remain silent and paused")
++                return session.submit(body)
++            except Exception:
++                # No child command was accepted. Restore the old playback
++                # state instead of leaving a visible episode paused on 429.
++                for previous, paused in previous_states:
++                    try:
++                        previous.submit({"paused": paused})
++                    except Exception:
++                        pass  # Preserve the original control failure.
++                raise
+ 
+     def release(self, identifier):
+         with self.guard:
+@@ -292,7 +327,8 @@
+         media_uri = str(self.job.source) if not progressive else self.job.stream_url
+         # Starting paused allows the frontend to place the surface and apply
+         # its remembered speed/volume before either picture or sound advances.
+-        desired = {"paused": True, "rate": 1, "volume": 1, "muted": False}
++        desired = {"paused": True, "rate": 1, "volume": 1,
++                   "muted": bool(getattr(self.job, "prewarm_parent", None))}
+         def retry_software():
+             nonlocal retried, initial, grace, last_progress, slow_since, frame_ready
+             if retried or player.get("hwdec-current") == "no":
+@@ -328,6 +364,7 @@
+                        "framedrop": "vo", "vd-lavc-threads": "0"}
+             for key, value in options.items():
+                 player.option(key, value)
++            player.option("mute", "yes" if desired["muted"] else "no")
+             if progressive:
+                 for key, value in {"cache": "yes", "cache-secs": "12", "demuxer-readahead-secs": "12",
+                                    "demuxer-max-bytes": "32MiB", "cache-pause": "yes",
+@@ -444,6 +481,7 @@
+                                      width=width, height=height, decoder="software" if hwdec == "no" else "hardware" if hwdec else "probing",
+                                      hwdec=hwdec, avsync=avsync, audioDevice=player.get("audio-device"),
+                                      buffering=buffering, outputReady=output_ready, bufferStart=buffer_start,
++                                     visible=bool(user.IsWindowVisible(hwnd)),
+                                      bufferEnd=min(buffer_end, self.job.duration or buffer_end),
+                                      audioExclusive=player.get("audio-exclusive"), audioOutput=player.get("current-ao"),
+                                      frameDrops=player.number("frame-drop-count"), decoderDrops=player.number("decoder-frame-drop-count"))

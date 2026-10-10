@@ -1,0 +1,11 @@
+--- a/native-tests/test_desktop_native.py
++++ b/native-tests/test_desktop_native.py
+@@ -267,7 +267,7 @@
+                 return {'time-pos':12.5,'video-params/w':1920,'video-params/h':1080,'duration':87}.get(key,default)
+             def close(self): self.handle=None
+         user=SimpleNamespace(SetThreadDpiAwarenessContext=lambda *_:None,
+-            CreateWindowExW=lambda *_:1,IsWindow=lambda *_:True,PeekMessageW=lambda *_:False,
++            CreateWindowExW=lambda *_:1,IsWindow=lambda *_:True,IsWindowVisible=lambda *_:True,PeekMessageW=lambda *_:False,
+             DestroyWindow=lambda *_:None)
+         host=SimpleNamespace(user=user,dll=driver,hardware=True)
+         job=SimpleNamespace(start_seconds=0,source=self.source,duration=87,cancelled=threading.Event())
