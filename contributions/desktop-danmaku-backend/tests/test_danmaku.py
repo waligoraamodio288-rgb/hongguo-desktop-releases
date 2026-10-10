@@ -7,12 +7,17 @@ from desktop_danmaku_track import DanmakuTrack
 
 ITEM={'text':'safe{\\pos(0,0)}[unknown]👍','offset_ms':1000,'lane':0}
 class Player:
-    def __init__(self): self.commands=[]; self.sid=0; self.fail=False
+    def __init__(self): self.commands=[]; self.sid=0; self.fail=False; self.properties={'sid':'no','secondary-sid':'no','secondary-sub-ass-override':'strip','sub-ass-override':'scale'};self.fail_remove=False
     def command(self,*args):
         if self.fail: raise RuntimeError('test failure')
+        if self.fail_remove and args[0]=='sub-remove':raise RuntimeError('remove failure')
         self.commands.append(args)
-        if args[0]=='sub-add': self.sid+=1
-    def get(self,key): return str(self.sid)
+        if args[0]=='sub-add': self.sid+=1;self.properties['sid']=str(self.sid)
+        if args[0]=='set':
+            # Real mpv refuses a single subtitle in both slots.
+            if args[1]=='secondary-sid' and str(args[2])==self.properties['sid']:return
+            self.properties[args[1]]=str(args[2])
+    def get(self,key): return self.properties.get(key)
 class DanmakuTests(unittest.TestCase):
     def test_bounds(self):
         self.assertEqual(validate_settings(DEFAULT_SETTINGS),DEFAULT_SETTINGS)
@@ -57,4 +62,30 @@ class DanmakuTests(unittest.TestCase):
         with self.assertRaises(ValueError): track.update({'danmaku':[],'danmakuSettings':{}})
         self.assertEqual(track.items,[ITEM])
         p.fail=False; track.source_reloaded(); track.apply(p); self.assertFalse(track.failed)
+    def test_existing_captions_preserved_and_restored(self):
+        p=Player();p.sid=10;p.properties.update(sid='7',**{'sub-ass-override':'no'})
+        track=DanmakuTrack();track.update({'danmaku':[ITEM]});track.apply(p)
+        self.assertEqual(p.get('secondary-sid'),'7');self.assertEqual(p.get('secondary-sub-ass-override'),'no')
+        self.assertEqual(p.get('sid'),'11')
+        track.update({'danmaku':[]});track.apply(p)
+        self.assertEqual(p.get('sid'),'7');self.assertEqual(p.get('secondary-sid'),'no')
+        self.assertEqual(p.get('secondary-sub-ass-override'),'strip')
+    def test_two_existing_subtitles_left_intact(self):
+        p=Player();p.properties.update(sid='7',**{'secondary-sid':'8'})
+        track=DanmakuTrack();track.update({'danmaku':[ITEM]});track.apply(p)
+        self.assertTrue(track.failed);self.assertEqual(p.commands,[])
+    def test_failed_clear_keeps_ownership_and_retries(self):
+        clock=[0];track=DanmakuTrack(clock=lambda:clock[0]);p=Player()
+        track.update({'danmaku':[ITEM]});track.apply(p);owned=track.track_id
+        p.fail_remove=True;track.update({'danmaku':[]});track.apply(p)
+        self.assertEqual(track.track_id,owned);self.assertTrue(track.dirty)
+        p.fail_remove=False;clock[0]=1;track.apply(p)
+        self.assertIsNone(track.track_id);self.assertFalse(track.failed)
+    def test_failed_replacement_cleanup_retains_old_id(self):
+        clock=[0];track=DanmakuTrack(clock=lambda:clock[0]);p=Player()
+        track.update({'danmaku':[ITEM]});track.apply(p)
+        p.fail_remove=True;track.update({'danmaku':[ITEM,{**ITEM,'offset_ms':5000}]});track.apply(p)
+        self.assertEqual(track.track_id,'2');self.assertEqual(track.pending_removals,{'1'})
+        p.fail_remove=False;clock[0]=1;track.apply(p)
+        self.assertEqual(track.pending_removals,set());self.assertEqual(track.loads,2)
 if __name__=='__main__': unittest.main()

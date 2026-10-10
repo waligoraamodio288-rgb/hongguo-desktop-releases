@@ -29,3 +29,13 @@ python -X utf8 -m unittest discover -s contributions/desktop-danmaku-backend/tes
 公开测试为人工构造输入，不连接上游。新导出模块已经独立验证；跨包 Chrome 用例由布局包统一维护。此前本机安装还完成53项窗口功能与21项原生像素检查，快/中/慢档（8/14/24秒）实测为161.25/92.5/53.75物理像素/视频秒；这些属于当时本机接线证据，不是本公开包在所有设备或上游发布后的保证。
 
 回滚时撤回本包接线及新增模块，保留原播放入口、用户偏好和原片，不修改其他播放/缓存贡献。原快捷键不新增、不拦截。Issue 关闭以应用发布并验证为前提，见 [ISSUES.md](ISSUES.md)。
+
+## 首轮审查修复
+
+保留已有字幕和 ASS 样式；两个字幕位均占用时不覆盖字幕。移除失败保留 owned ID，按一秒间隔重试；替换旧轨道也保留待移除集合。12项 Python 测试和真实 libmpv 合成音频的字幕选择/恢复检查通过。
+
+字幕选择与两个字幕位的限制依据 [mpv官方手册](https://mpv.io/manual/stable/#subtitles)。可在已接入 #204 的 Windows 主机运行补充验证：
+
+```pwsh
+pwsh -NoProfile -Command "python contributions/desktop-danmaku-backend/tests/verify_mpv.py --native-package contributions/desktop-native-playback --dll <verified-libmpv-dll>"
+```
