@@ -59,6 +59,8 @@ export function installSocialStyles() {
       .desktop-player.theater .desktop-player-layout.desktop-social-enabled aside{display:flex}
       @keyframes desktopDrawerIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
       @media(max-width:800px){.desktop-player-layout.desktop-social-enabled{grid-template-columns:minmax(0,1fr) min(44vw,340px)}.desktop-social-tabs,.desktop-social-toolbar,.desktop-social-header{padding-left:12px;padding-right:12px}.desktop-social-list{padding-left:12px;padding-right:12px}.player-toolbar .desktop-social-controls{gap:2px}.player-toolbar .desktop-social-controls button{min-width:34px;padding:4px}}
+      .desktop-player.mini .desktop-player-layout.desktop-social-enabled{grid-template-columns:minmax(0,1fr)}
+      .desktop-player.mini .desktop-player-layout.desktop-social-enabled aside{display:none}
       @media(prefers-reduced-motion:reduce){.desktop-player-layout.desktop-social-enabled aside{animation:none}}
     `;
     document.head.append(style);
@@ -86,6 +88,8 @@ function DesktopSocialSelection({media}) {
     observer.observe(header);
     const controls = document.querySelector('.window-controls');
     if (controls) observer.observe(controls);
+    const mini = header.querySelector('.player-mini-toggle');
+    if (mini) observer.observe(mini);
     window.addEventListener('resize', layout);
     return () => {observer.disconnect(); window.removeEventListener('resize', layout);};
   }, []);

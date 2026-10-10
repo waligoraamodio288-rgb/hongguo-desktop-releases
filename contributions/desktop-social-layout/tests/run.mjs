@@ -88,10 +88,20 @@ try{
  const narrow=await page.locator('video').boundingBox();
  check(narrow.width<wide.width,'drawer opening narrows video');
  check(JSON.stringify(await page.locator('.desktop-player').boundingBox())===JSON.stringify(initial),'player outer frame remains fixed');
+ await page.evaluate(()=>document.querySelector('.desktop-player').classList.add('mini'));
+ check(await page.locator('aside').isHidden(),'mini mode hides an already enabled drawer');
+ check(Math.abs((await page.locator('video').boundingBox()).width-wide.width)<1,'mini mode restores a single full-width video column');
+ await page.evaluate(()=>document.querySelector('.desktop-player').classList.remove('mini'));
  await page.getByRole('tab',{name:'本集评论',exact:true}).click();
  await page.getByText('整剧收藏 18',{exact:true}).waitFor();
  check((await socialCalls()).some(c=>c.path.endsWith('/comments')),'comments load on explicit request');
  check(await page.locator('.desktop-social-header').count()===1,'comment tab retains title and close button');
+ await page.getByRole('button',{name:'刷新互动计数',exact:true}).click();
+ await page.waitForFunction(()=>calls.some(c=>c.path.endsWith('/metrics')&&c.params.refresh==='true'));
+ await page.getByRole('tab',{name:'选集',exact:true}).click();
+ await page.getByRole('tab',{name:'本集评论',exact:true}).click();
+ await page.getByText('整剧收藏 18',{exact:true}).waitFor();
+ check(await page.evaluate(()=>calls.filter(c=>c.path.endsWith('/metrics')).at(-1).params.refresh==='false'),'manual metrics refresh is consumed before ordinary reopening');
  check(await page.locator('.desktop-social-item > p img').count()===1,'comments render known emojis');
  check((await page.locator('.desktop-social-item > p').textContent()).includes('constructor <img onerror=alert(1)>'),'untrusted content remains text');
  check(await page.locator('.desktop-social-item img[onerror]').count()===0,'no HTML injection');
@@ -123,9 +133,12 @@ try{
  await page.getByRole('button',{name:'重试',exact:true}).click();
  await page.locator('.desktop-social-item').first().waitFor();
  await page.getByRole('button',{name:'关闭评论抽屉',exact:true}).click();
- await page.getByRole('button',{name:'弹幕',exact:true}).hover();
+ await page.mouse.move(0,0);
+ await page.getByRole('button',{name:'弹幕',exact:true}).focus();
  await page.getByRole('region',{name:'弹幕设置',exact:true}).waitFor();
- check(await page.locator('input[type=range]').count()===4,'hover on same danmaku toggle shows four settings');
+ check(await page.locator('input[type=range]').count()===4,'focus on same danmaku toggle exposes all settings without a shortcut');
+ await page.keyboard.press('Tab');
+ check(await page.getByRole('region',{name:'弹幕设置',exact:true}).isVisible(),'tabbing into settings keeps panel open');
  await page.getByRole('slider',{name:'移动速度',exact:true}).focus();
  await page.keyboard.press('End');
  check(await page.evaluate(()=>danmakuApi.settings().duration===4),'speed slider to the right means faster');
@@ -138,6 +151,10 @@ try{
   const boxes=await page.locator('.return-button,.desktop-selection-open,.player-mini-toggle,.window-controls button').evaluateAll(nodes=>nodes.map(n=>{const r=n.getBoundingClientRect();return {name:n.textContent,left:r.left,right:r.right,top:r.top,bottom:r.bottom};}));
   check(boxes.every((a,i)=>a.left>=0&&a.right<=width&&boxes.slice(i+1).every(b=>Math.min(a.right,b.right)<=Math.max(a.left,b.left)||Math.min(a.bottom,b.bottom)<=Math.max(a.top,b.top))),`all individual top controls avoid overlap at ${width}px`);
  }
+ await page.locator('.player-mini-toggle').evaluate(node=>node.style.width='96px');
+ await page.waitForTimeout(100);
+ const miniBox=await page.locator('.player-mini-toggle').boundingBox(),selectionBox=await page.locator('.desktop-selection-open').boundingBox();
+ check(selectionBox.x+selectionBox.width+8<=miniBox.x,'mini button width changes update selection offset without resizing the window');
  // Respect the host keyboard owner: the module does not prevent or stop events.
  await page.evaluate(()=>{window.keySeen=0;window.addEventListener('keydown',()=>keySeen++);});
  await page.keyboard.press('Escape');
