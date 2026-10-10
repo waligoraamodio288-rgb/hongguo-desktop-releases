@@ -1,0 +1,6 @@
+--- a/backend/desktop_hls.py
++++ b/backend/desktop_hls.py
+@@ -32,2 +32,3 @@
+         original = reader.streams.video[0]
++        original.thread_type = "AUTO"
+         full_duration = reader.duration / av.time_base if reader.duration else None
