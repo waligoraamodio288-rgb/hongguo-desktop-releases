@@ -3,13 +3,26 @@ import math
 import re
 
 
-def playable_range(job, full_cache_ready=None):
+def playable_range(job, full_cache_ready=None, *, native_state=None):
     """Disk-ready media coverage, independent of WebView's bounded buffer."""
     duration, origin = job.duration, job.window_origin
     if (job.failed or job.cancelled.is_set() or duration is None or origin is None
             or not math.isfinite(duration) or duration <= 0
             or not math.isfinite(origin) or not 0 <= origin < duration):
         return [0, 0]
+    if getattr(job, "video_mode", None) == "native":
+        # The native owner reports retained packets, independent of presentation time.
+        state = native_state or {}
+        if state.get("state") not in ("ready", "buffering", "ended") or not state.get("outputReady"):
+            return [0, 0]
+        start, end = state.get("bufferStart"), state.get("bufferEnd")
+        if (type(start) not in (int, float) or type(end) not in (int, float)
+                or not math.isfinite(start) or not math.isfinite(end)
+                or start < 0 or end <= start or start >= duration):
+            return [0, 0]
+        if job.cancelled.is_set() or job.failed:
+            return [0, 0]
+        return [start, min(duration, end)]
     if job.source and full_cache_ready:
         try:
             if full_cache_ready(job.source):

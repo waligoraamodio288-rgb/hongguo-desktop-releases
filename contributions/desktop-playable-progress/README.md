@@ -59,3 +59,13 @@ pwsh -NoProfile -Command "node --test contributions/desktop-playable-progress/te
 复审补充：补上目标时长、兼容版本、片段时长和结束位置校验；非有限或越界的跳转起点返回空范围。
 
 HLS校验按[RFC 8216](https://www.rfc-editor.org/rfc/rfc8216.html#section-4.3.3.1)检查必需的 TARGETDURATION、fMP4 MAP所需的VERSION>=6，以及片段时长和标签顺序。测试片段仍为fake字节，不能代替真实媒体解码。
+
+## 原生 HEVC 模式
+
+传入同一会话的 `native_state=native.snapshot(job.id)`，`job.video_mode="native"`。只显示播放器实际保留的 `bufferStart/bufferEnd`，不以下载字节或播放位置估算灰条。暂停时复用原有状态轮询；完整本地原片的范围由 native owner 报告，覆盖整集。失败、取消、无首帧或非法范围返回空范围。宿主若已在 status 中实现相同逻辑，复用该 owner，不再同时运行第二套范围计算。
+
+新增 `tests/test_native_range.py` 四项测试；原 15 项 HLS 与 6 项 Node 回归保留。新的暂停预加载材料配合此字段验证：暂停位置约 4 秒不变，实际 WR 灰条从约 18% 增长至 100%，硬解和强制软解均通过。它只代表本机集成结果，上游需接入、发布后验证。
+
+```pwsh
+pwsh -NoProfile -Command "python -I contributions/desktop-playable-progress/tests/test_native_range.py"
+```
