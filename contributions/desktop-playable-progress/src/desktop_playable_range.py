@@ -50,12 +50,10 @@ def playable_range(job, full_cache_ready=None, *, native_state=None):
         mapped, ended = False, False
         for line in lines:
             if line.startswith("#EXT-X-MAP:"):
-                if line != '#EXT-X-MAP:URI="init.mp4"' or ended:
+                if line != '#EXT-X-MAP:URI="init.mp4"':
                     return [0, 0]
                 mapped = True
             elif line.startswith("#EXTINF:"):
-                if ended:
-                    return [0, 0]
                 if pending is not None:
                     incomplete = True
                     break
@@ -67,11 +65,11 @@ def playable_range(job, full_cache_ready=None, *, native_state=None):
                         or math.floor(pending + 0.5) > parameters["TARGETDURATION"]):
                     return [0, 0]
             elif line == "#EXT-X-ENDLIST":
-                if ended or pending is not None:
+                if ended:
                     return [0, 0]
                 ended = True
             elif line and not line.startswith("#"):
-                if ended or not mapped or pending is None or not re.fullmatch(r"seg[0-9]{6}\.m4s", line):
+                if not mapped or pending is None or not re.fullmatch(r"seg[0-9]{6}\.m4s", line):
                     return [0, 0]
                 fragment = job.directory / line
                 if not fragment.is_file() or fragment.is_symlink() or fragment.stat().st_size == 0:

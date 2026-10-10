@@ -26,6 +26,14 @@ class RangeTests(unittest.TestCase):
         (self.path / "index.m3u8").write_text(text, encoding="utf-8")
         (self.path / "complete.marker").write_text("desktop-hls-v1\n", encoding="ascii")
 
+    def test_single_endlist_is_valid_before_or_between_media_tags(self):
+        self.output();self.job.done.set();playlist=self.path/'index.m3u8'
+        body=playlist.read_text(encoding='utf-8').replace('#EXT-X-ENDLIST\n','')
+        for anchor in ('#EXT-X-MAP:', '#EXTINF:', 'seg000000.m4s'):
+            with self.subTest(anchor=anchor):
+                playlist.write_text(body.replace(anchor,'#EXT-X-ENDLIST\n'+anchor,1),encoding='utf-8')
+                self.assertEqual(playable_range(self.job),[0,63])
+
     def test_raw_download_is_not_playable(self):
         self.job.source = self.path / "source.mp4"
         self.job.source.write_bytes(b"raw")

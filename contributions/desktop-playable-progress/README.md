@@ -46,7 +46,7 @@ pwsh -NoProfile -Command "python -I contributions/desktop-playable-progress/test
 pwsh -NoProfile -Command "node --test contributions/desktop-playable-progress/tests/test_frontend.cjs"
 ```
 
-15项 Python fixture 验证原片不算可播、磁盘增长、缺片、完整标记、seek 缺口、完整缓存 callback、失败/取消和坏 playlist；新增从0开始命中完整缓存、init 映射以及校验期间取消/失败、HLS必需首行的回归。6项 Node 测试验证完整/窗口样式、暂停刷新、恢复保留、切集旧回调、卸载、失败重试与失效缩短。它们不代替私有 API/React/WebView 接线验收。
+16项 Python fixture 验证原片不算可播、磁盘增长、缺片、完整标记、seek 缺口、完整缓存 callback、失败/取消和坏 playlist；新增从0开始命中完整缓存、init 映射以及校验期间取消/失败、HLS必需首行的回归。6项 Node 测试验证完整/窗口样式、暂停刷新、恢复保留、切集旧回调、卸载、失败重试与失效缩短。它们不代替私有 API/React/WebView 接线验收。
 
 ## 本机真实结果与上游门禁
 
@@ -69,3 +69,5 @@ HLS校验按[RFC 8216](https://www.rfc-editor.org/rfc/rfc8216.html#section-4.3.3
 ```pwsh
 pwsh -NoProfile -Command "python -I contributions/desktop-playable-progress/tests/test_native_range.py"
 ```
+
+复核审查回执后按[RFC8216 §4.3.3.4](https://www.rfc-editor.org/rfc/rfc8216.html#section-4.3.3.4)允许单个ENDLIST出现在列表任意位置；它只表示不再追加，不是解析终止符。新增前置/媒体标签间位置与尾部不完整EXTINF回归，重复ENDLIST仍拒绝。
