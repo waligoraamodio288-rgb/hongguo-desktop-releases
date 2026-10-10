@@ -15,6 +15,37 @@ class ReviewEdges(unittest.TestCase):
         self.output=self.root/'output';complete_output(self.output)
     def cache(self,root=None):
         return PlayableEpisodeCache(root or self.root/'cache',encoder=encoder,profile_files=PROFILE_FILES)
+    def test_non_json_source_identity_cannot_fail_successful_encode(self):
+        class Source:
+            def cache_identity(self):return {'contentHash':b'bytes'}
+        cache=self.cache();target=self.root/'encoded'
+        cache.encode(Source(),target)
+        self.assertTrue((target/'complete.marker').exists())
+
+    def test_protected_replacement_is_rejected_before_reservation(self):
+        cache=self.cache();target=cache.store(self.source,self.output)
+        other=self.root/'other';other.write_bytes(b'other');unrelated=cache.store(other,self.output)
+        (target/'owner.marker').write_bytes(b'unknown')
+        before={p.name:p.read_bytes() for p in unrelated.iterdir()}
+        with patch.object(cache,'_reserve',wraps=cache._reserve) as reserve:
+            with self.assertRaises(ValueError):cache.store(self.source,self.output)
+            reserve.assert_not_called()
+        self.assertEqual(before,{p.name:p.read_bytes() for p in unrelated.iterdir()})
+
+    def test_optional_status_callback_and_serialization_errors_are_contained(self):
+        value=EpisodePrefetcher(lambda _:self.source,lambda _:({},[]),self.root/'cache',
+            encoder=encoder,profile_files=PROFILE_FILES,status_path=self.root/'status.json')
+        value.current_source=object()
+        for callback in (lambda _:(_ for _ in ()).throw(RuntimeError('teardown')),
+                         lambda _:dict(complete=object())):
+            value.source_status=callback
+            value._report();value.close()
+
+    def test_complete_cache_rejects_encryption_and_gap_tags(self):
+        cache=self.cache();playlist=self.output/'index.m3u8';original=playlist.read_text(encoding='utf-8')
+        for tag in ('#EXT-X-GAP','#EXT-X-KEY:METHOD=AES-128,URI="missing"','#EXT-X-SESSION-KEY:METHOD=AES-128,URI="missing"'):
+            playlist.write_text(original.replace('#EXTINF:',tag+'\n#EXTINF:',1),encoding='utf-8')
+            with self.assertRaises(ValueError):cache.store(self.source,self.output)
     def test_nested_unknown_stage_counts_towards_quota_without_deletion(self):
         cache=self.cache();stage=cache.root/('stage-'+'a'*32)
         (stage/'unknown').mkdir(parents=True)

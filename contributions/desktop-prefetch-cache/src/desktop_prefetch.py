@@ -289,7 +289,7 @@ class EpisodePrefetcher:
                 temporary = self.status_path.with_suffix(".json.tmp")
                 temporary.write_text(json.dumps(self.snapshot(), ensure_ascii=False), encoding="utf-8")
                 os.replace(temporary, self.status_path)
-        except OSError:
+        except Exception:
             pass
 
     def wait_idle(self, timeout=30):

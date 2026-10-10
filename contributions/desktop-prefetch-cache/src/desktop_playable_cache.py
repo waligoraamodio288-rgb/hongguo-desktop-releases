@@ -107,6 +107,8 @@ class PlayableEpisodeCache:
             raise ValueError("Artifact playlist is incomplete")
         mapped, ended, segments, pending = False, False, [], None
         for line in lines:
+            if line == "#EXT-X-GAP" or line.startswith(("#EXT-X-KEY:", "#EXT-X-SESSION-KEY:")):
+                raise ValueError("Unsupported local artifact HLS tag")
             if line.startswith("#EXT-X-MAP:"):
                 if line != '#EXT-X-MAP:URI="init.mp4"':
                     raise ValueError("Invalid artifact initialization map")
@@ -198,7 +200,7 @@ class PlayableEpisodeCache:
                 directory.rmdir()
                 raise
 
-    def _remove_owned(self, directory):
+    def _owned_children(self, directory):
         if (directory.parent != self.root or not plain(directory)
                 or not re.fullmatch(r"(?:[0-9a-f]{64}|stage-[0-9a-f]{32})", directory.name)):
             raise ValueError("Unsafe playable cache cleanup")
@@ -208,6 +210,10 @@ class PlayableEpisodeCache:
         owner = directory / "owner.marker"
         if not owner.is_file() or owner.read_text(encoding="ascii") != OWNER:
             raise ValueError("Unowned playable cache directory")
+        return children
+
+    def _remove_owned(self, directory):
+        children = self._owned_children(directory)
         for path in children:
             path.unlink()
         directory.rmdir()
@@ -291,11 +297,13 @@ class PlayableEpisodeCache:
                 (stage / "cache.json").write_text(json.dumps(manifest), encoding="utf-8")
                 if cancelled():
                     raise EncodingCancelled()
+                target = self.root / key
+                if target.exists():
+                    self._owned_children(target)  # Protect unrelated LRU before reservation.
                 # Stage bytes are already counted. Evict only at commit, after
                 # all cancellable copying/hashing and manifest construction.
                 metadata_bytes = sum((stage / name).stat().st_size for name in ("owner.marker", "cache.json"))
                 self._reserve(max(0, 65536 - metadata_bytes))
-                target = self.root / key
                 if target.exists():
                     self._remove_owned(target)
                 os.replace(stage, target)
@@ -322,5 +330,5 @@ class PlayableEpisodeCache:
             self.encoder(source, directory, on_ready, cancelled=cancelled, **extra)
             try:
                 self.store(source, directory, cancelled, video_mode=video_mode)
-            except (OSError, ValueError):
+            except (OSError, ValueError, TypeError):
                 pass
