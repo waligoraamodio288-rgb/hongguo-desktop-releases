@@ -104,6 +104,16 @@ class RangeTests(unittest.TestCase):
                     return True
                 self.assertEqual(playable_range(self.job, cached), [0, 0])
 
+    def test_playlist_must_start_with_required_hls_header(self):
+        self.output()
+        self.job.done.set()
+        valid = (self.path / "index.m3u8").read_text(encoding="utf-8")
+        for text in (valid.removeprefix("#EXTM3U\n"), "\n" + valid,
+                     valid.replace("#EXTM3U", "#EXTM3U8", 1)):
+            with self.subTest(playlist=text):
+                (self.path / "index.m3u8").write_text(text, encoding="utf-8")
+                self.assertEqual(playable_range(self.job), [0, 0])
+
     def test_failure_cancel_and_invalid_duration(self):
         self.output()
         self.job.failed = True

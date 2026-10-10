@@ -22,6 +22,8 @@ def playable_range(job, full_cache_ready=None):
         if not init.is_file() or init.is_symlink() or init.stat().st_size == 0:
             return [0, 0]
         lines = (job.directory / "index.m3u8").read_text(encoding="utf-8").splitlines()
+        if not lines or lines[0] != "#EXTM3U":
+            return [0, 0]
         available, pending, count, incomplete = 0.0, None, 0, False
         mapped = False
         for line in lines:
