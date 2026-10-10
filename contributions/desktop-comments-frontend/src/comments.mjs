@@ -75,6 +75,7 @@ function SocialSession({session, media}) {
   const [tab, setTab] = O.useState('episodes'), [page, setPage] = O.useState(null);
   const [error, setError] = O.useState(''), [busy, setBusy] = O.useState(false);
   const [refresh, setRefresh] = O.useState(0), [metricsRefresh, setMetricsRefresh] = O.useState(0);
+  const consumedMetricsRefresh = O.useRef(0);
   const [danmaku, setDanmaku] = O.useState(() => desktopSocialPreference('danmaku', true));
   const [drawer, setDrawer] = O.useState(() => desktopSocialPreference('social', false));
   const [danmakuError, setDanmakuError] = O.useState('');
@@ -107,7 +108,9 @@ function SocialSession({session, media}) {
   }, [key, drawer]);
   O.useEffect(() => {
     const abort = new AbortController(); setStats(null); setStatsError('');
-    if (endpoint && commenting) desktopSocialRead(endpoint, 'metrics', {refresh: metricsRefresh > 0}, abort.signal)
+    const forceRefresh = metricsRefresh !== consumedMetricsRefresh.current;
+    consumedMetricsRefresh.current = metricsRefresh;
+    if (endpoint && commenting) desktopSocialRead(endpoint, 'metrics', {refresh: forceRefresh}, abort.signal)
       .then(value => {if (!abort.signal.aborted) setStats(value);})
       .catch(e => {if (!abort.signal.aborted) setStatsError('互动计数加载失败，请重试');});
     return () => abort.abort();
