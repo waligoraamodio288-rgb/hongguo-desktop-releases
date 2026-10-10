@@ -1,13 +1,15 @@
 """Standby ownership and cold-source regressions against the real session owner."""
 from pathlib import Path
 import tempfile
+import asyncio
+import queue
 import threading
 import time
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 from fastapi import HTTPException
-from desktop_hls_service import HlsJobs
+from desktop_hls_service import HlsJobs, make_router
 from desktop_native import NativeHost
 from desktop_prefetch import EpisodePrefetcher
 
@@ -65,6 +67,89 @@ class StandbyTests(unittest.TestCase):
         self.assertEqual(prefetch.current['episode'],1)
         self.assertFalse(prefetch.foreground)
         self.assertIsNone(prefetch.busy)
+
+    def test_native_control_keeps_parent_until_applied_activation(self):
+        jobs,_=self.jobs()
+        parent=jobs.create('1234567890123456',1)
+        child=jobs.create(parent.series_id,2,negotiate_codec=True,prewarm_parent=parent.id)
+        child.video_mode='native';child.ready.set()
+        state={'visible':False,'outputReady':True,'revision':0}
+        jobs.native=SimpleNamespace(available=True,snapshot=lambda _:state,
+            control=lambda *_:9,release=lambda _:None)
+        routes=make_router(jobs,lambda _:True).routes
+        control=next(route.endpoint for route in routes if route.path.endswith('/control'))
+        async def body():return {'visible':True,'paused':False,'muted':False}
+        result=asyncio.run(control(child.id,SimpleNamespace(json=body)))
+        self.assertEqual(result,{'revision':9})
+        self.assertEqual(child.prewarm_parent,parent.id)
+        activate=next(route.endpoint for route in routes if route.path.endswith('/activate'))
+        for update in ({'visible':False,'outputReady':True,'revision':9},
+                       {'visible':True,'outputReady':False,'revision':9},
+                       {'visible':True,'outputReady':True,'revision':8}):
+            state.update(update)
+            with self.assertRaises(HTTPException):activate(child.id)
+            self.assertEqual(child.prewarm_parent,parent.id)
+        state.update(visible=True,outputReady=True,revision=9)
+        self.assertEqual(activate(child.id),{'activated':True})
+        jobs.release(parent.id)
+        self.assertFalse(child.cancelled.is_set())
+
+    def test_parent_cancel_before_native_ack_cancels_queued_child(self):
+        jobs,_=self.jobs()
+        parent=jobs.create('1234567890123456',1)
+        child=jobs.create(parent.series_id,2,negotiate_codec=True,prewarm_parent=parent.id)
+        child.video_mode='native';child.activation_revision=9
+        jobs.native=SimpleNamespace(snapshot=lambda _:dict(visible=False,outputReady=True,revision=8),release=lambda _:None)
+        with self.assertRaises(HTTPException):jobs.activate(child)
+        jobs.release(parent.id)
+        self.assertTrue(child.cancelled.is_set())
+
+    def test_activation_cancel_does_not_clear_parent_download_queue(self):
+        prefetch=EpisodePrefetcher(lambda _:None,lambda _:({},[]),self.root/'cache',encoder=lambda *_:None)
+        self.addCleanup(prefetch.close)
+        parent=SimpleNamespace(id='a'*32,cancelled=threading.Event(),failed=False)
+        prefetch.begin(parent,'1234567890123456',1);prefetch.foreground.clear()
+        child=SimpleNamespace(id='b'*32,cancelled=threading.Event(),failed=False,prewarm_parent=parent.id)
+        prefetch.before_work(child)
+        expected=[(prefetch.generation,9,'1234567890123456')]
+        prefetch.download_pending=expected.copy()
+        child.prewarm_parent=None;child.cancelled.set()
+        prefetch.promote(child,'1234567890123456',2)
+        prefetch.finish(child,'1234567890123456',2,None)
+        self.assertEqual(prefetch.download_pending,expected)
+        self.assertEqual(prefetch.current['episode'],1)
+        self.assertIsNone(prefetch.busy)
+
+    def test_child_submit_failure_rolls_back_previous_pause(self):
+        host=object.__new__(NativeHost);host.guard=threading.RLock()
+        parent_state={'paused':False,'revision':0};commands=[]
+        def submit_parent(body):
+            commands.append(body);parent_state.update(body,revision=parent_state['revision']+1)
+            return parent_state['revision']
+        def submit_child(body):raise queue.Full()
+        parent=SimpleNamespace(stop=threading.Event(),snapshot=lambda:parent_state.copy(),submit=submit_parent)
+        child=SimpleNamespace(stop=threading.Event(),snapshot=lambda:{'outputReady':True},
+            submit=submit_child,job=SimpleNamespace(prewarm_parent='a'*32))
+        host.sessions={'a'*32:parent,'b'*32:child}
+        with self.assertRaises(queue.Full):host.control('b'*32,{'visible':True,'paused':False,'muted':False})
+        self.assertEqual(commands,[{'paused':True},{'paused':False}])
+        self.assertFalse(parent_state['paused'])
+
+    def test_finishing_between_activation_and_promotion_keeps_old_metadata(self):
+        source=self.root/'prepared.mp4';source.write_bytes(b'prepared')
+        prefetch=EpisodePrefetcher(lambda _:source,lambda _:({},[]),self.root/'cache',encoder=lambda *_:None)
+        self.addCleanup(prefetch.close)
+        parent=SimpleNamespace(id='a'*32,cancelled=threading.Event(),failed=False)
+        prefetch.begin(parent,'1234567890123456',1)
+        prefetch.foreground.clear()
+        warm=SimpleNamespace(id='b'*32,cancelled=threading.Event(),failed=False,prewarm_parent=parent.id)
+        prefetch.before_work(warm)
+        warm.prewarm_parent=None
+        prefetch.finish(warm,'1234567890123456',2,source)
+        self.assertEqual(prefetch.current['episode'],1)
+        self.assertIsNone(prefetch.current_source)
+        self.assertFalse(prefetch.current_complete)
+        self.assertFalse(prefetch.foreground)
 
     def test_native_standby_does_not_close_foreground_and_refuses_sound(self):
         class Session:

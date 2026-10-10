@@ -78,11 +78,12 @@
              expected = self.foreground.get(job.id)
          mode = getattr(job, "video_mode", "h264")
          # Validation hashes source/media bytes. Never hold the scheduling lock for I/O.
-@@ -159,6 +189,8 @@
+@@ -159,6 +189,9 @@
              pass  # Completion bookkeeping still releases the old foreground slot.
          with self.condition:
              generation = self.foreground.pop(job.id, None)
-+            if getattr(job, "prewarm_parent", None):
++            if (getattr(job, "prewarm_parent", None) or
++                    self.current != {"seriesId": str(series_id), "episode": episode}):
 +                generation = None
              if self.busy == job.id:
                  self.busy = None

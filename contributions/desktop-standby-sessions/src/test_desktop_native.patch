@@ -1,6 +1,6 @@
 --- a/native-tests/test_desktop_native.py
 +++ b/native-tests/test_desktop_native.py
-@@ -261,7 +261,7 @@
+@@ -267,7 +267,7 @@
                  return {'time-pos':12.5,'video-params/w':1920,'video-params/h':1080,'duration':87}.get(key,default)
              def close(self): self.handle=None
          user=SimpleNamespace(SetThreadDpiAwarenessContext=lambda *_:None,

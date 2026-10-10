@@ -18,33 +18,46 @@
              session = NativeSession(self, job, self.parent_window())
              self.sessions[job.id] = session
              try:
-@@ -193,6 +198,25 @@
+@@ -193,7 +198,37 @@
              session = self.sessions.get(identifier)
              if not session or session.stop.is_set():
                  raise ValueError("Native session unavailable")
-+            if getattr(session.job, "prewarm_parent", None):
-+                if body.get("visible") is True:
-+                    if not session.snapshot().get("outputReady"):
-+                        raise ValueError("Standby frame unavailable")
-+                    # Stop old audio before the standby may be unpaused. The
-+                    # old picture remains until the new surface is displayed.
-+                    for identifier_, previous in self.sessions.items():
-+                        if identifier_ != identifier:
-+                            revision = previous.submit({"paused": True})
-+                            until = time.monotonic() + .3
-+                            while time.monotonic() < until:
-+                                value = previous.snapshot()
-+                                if value.get("paused") and value.get("revision", 0) >= revision:
-+                                    break
-+                                time.sleep(.005)
-+                            else:
-+                                raise ValueError("Previous audio not paused")
-+                elif body.get("paused") is False or body.get("muted") is False:
-+                    raise ValueError("Standby must remain silent and paused")
-             return session.submit(body)
+-            return session.submit(body)
++            previous_states = []
++            try:
++                if getattr(session.job, "prewarm_parent", None):
++                    if body.get("visible") is True:
++                        if not session.snapshot().get("outputReady"):
++                            raise ValueError("Standby frame unavailable")
++                        for identifier_, previous in self.sessions.items():
++                            if identifier_ != identifier:
++                                before = previous.snapshot()
++                                previous_states.append((previous, bool(before.get("paused", True))))
++                                revision = previous.submit({"paused": True})
++                                until = time.monotonic() + .3
++                                while time.monotonic() < until:
++                                    value = previous.snapshot()
++                                    if value.get("paused") and value.get("revision", 0) >= revision:
++                                        break
++                                    time.sleep(.005)
++                                else:
++                                    raise ValueError("Previous audio not paused")
++                    elif body.get("paused") is False or body.get("muted") is False:
++                        raise ValueError("Standby must remain silent and paused")
++                return session.submit(body)
++            except Exception:
++                # No child command was accepted. Restore the old playback
++                # state instead of leaving a visible episode paused on 429.
++                for previous, paused in previous_states:
++                    try:
++                        previous.submit({"paused": paused})
++                    except Exception:
++                        pass  # Preserve the original control failure.
++                raise
  
      def release(self, identifier):
-@@ -292,7 +316,8 @@
+         with self.guard:
+@@ -292,7 +327,8 @@
          media_uri = str(self.job.source) if not progressive else self.job.stream_url
          # Starting paused allows the frontend to place the surface and apply
          # its remembered speed/volume before either picture or sound advances.
@@ -54,7 +67,7 @@
          def retry_software():
              nonlocal retried, initial, grace, last_progress, slow_since, frame_ready
              if retried or player.get("hwdec-current") == "no":
-@@ -328,6 +353,7 @@
+@@ -328,6 +364,7 @@
                         "framedrop": "vo", "vd-lavc-threads": "0"}
              for key, value in options.items():
                  player.option(key, value)
@@ -62,7 +75,7 @@
              if progressive:
                  for key, value in {"cache": "yes", "cache-secs": "12", "demuxer-readahead-secs": "12",
                                     "demuxer-max-bytes": "32MiB", "cache-pause": "yes",
-@@ -441,6 +467,7 @@
+@@ -444,6 +481,7 @@
                                       width=width, height=height, decoder="software" if hwdec == "no" else "hardware" if hwdec else "probing",
                                       hwdec=hwdec, avsync=avsync, audioDevice=player.get("audio-device"),
                                       buffering=buffering, outputReady=output_ready, bufferStart=buffer_start,
