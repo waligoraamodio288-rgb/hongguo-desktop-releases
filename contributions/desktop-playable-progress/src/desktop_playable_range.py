@@ -7,7 +7,8 @@ def playable_range(job, full_cache_ready=None):
     """Disk-ready media coverage, independent of WebView's bounded buffer."""
     duration, origin = job.duration, job.window_origin
     if (job.failed or job.cancelled.is_set() or duration is None or origin is None
-            or not math.isfinite(duration) or duration <= 0):
+            or not math.isfinite(duration) or duration <= 0
+            or not math.isfinite(origin) or not 0 <= origin < duration):
         return [0, 0]
     if job.source and full_cache_ready:
         try:
@@ -24,22 +25,40 @@ def playable_range(job, full_cache_ready=None):
         lines = (job.directory / "index.m3u8").read_text(encoding="utf-8").splitlines()
         if not lines or lines[0] != "#EXTM3U":
             return [0, 0]
+        parameters = {}
+        for tag, minimum in (("TARGETDURATION", 1), ("VERSION", 6)):
+            prefix = "#EXT-X-" + tag + ":"
+            values = [line[len(prefix):] for line in lines if line.startswith(prefix)]
+            if (len(values) != 1 or not re.fullmatch(r"[0-9]{1,20}", values[0])
+                    or int(values[0]) < minimum):
+                return [0, 0]
+            parameters[tag] = int(values[0])
         available, pending, count, incomplete = 0.0, None, 0, False
-        mapped = False
+        mapped, ended = False, False
         for line in lines:
             if line.startswith("#EXT-X-MAP:"):
-                if line != '#EXT-X-MAP:URI="init.mp4"':
+                if line != '#EXT-X-MAP:URI="init.mp4"' or ended:
                     return [0, 0]
                 mapped = True
             elif line.startswith("#EXTINF:"):
+                if ended:
+                    return [0, 0]
                 if pending is not None:
                     incomplete = True
                     break
-                pending = float(line[8:].split(",", 1)[0])
-                if not math.isfinite(pending) or pending <= 0:
+                token, comma, _ = line[8:].partition(",")
+                if not comma or not re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", token):
                     return [0, 0]
+                pending = float(token)
+                if (not math.isfinite(pending) or pending <= 0
+                        or math.floor(pending + 0.5) > parameters["TARGETDURATION"]):
+                    return [0, 0]
+            elif line == "#EXT-X-ENDLIST":
+                if ended or pending is not None:
+                    return [0, 0]
+                ended = True
             elif line and not line.startswith("#"):
-                if not mapped or pending is None or not re.fullmatch(r"seg[0-9]{6}\.m4s", line):
+                if ended or not mapped or pending is None or not re.fullmatch(r"seg[0-9]{6}\.m4s", line):
                     return [0, 0]
                 fragment = job.directory / line
                 if not fragment.is_file() or fragment.is_symlink() or fragment.stat().st_size == 0:

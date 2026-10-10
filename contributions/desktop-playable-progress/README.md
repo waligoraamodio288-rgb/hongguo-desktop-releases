@@ -46,7 +46,7 @@ pwsh -NoProfile -Command "python -I contributions/desktop-playable-progress/test
 pwsh -NoProfile -Command "node --test contributions/desktop-playable-progress/tests/test_frontend.cjs"
 ```
 
-11项 Python fixture 验证原片不算可播、磁盘增长、缺片、完整标记、seek 缺口、完整缓存 callback、失败/取消和坏 playlist；新增从0开始命中完整缓存、init 映射以及校验期间取消/失败、HLS必需首行的回归。6项 Node 测试验证完整/窗口样式、暂停刷新、恢复保留、切集旧回调、卸载、失败重试与失效缩短。它们不代替私有 API/React/WebView 接线验收。
+15项 Python fixture 验证原片不算可播、磁盘增长、缺片、完整标记、seek 缺口、完整缓存 callback、失败/取消和坏 playlist；新增从0开始命中完整缓存、init 映射以及校验期间取消/失败、HLS必需首行的回归。6项 Node 测试验证完整/窗口样式、暂停刷新、恢复保留、切集旧回调、卸载、失败重试与失效缩短。它们不代替私有 API/React/WebView 接线验收。
 
 ## 本机真实结果与上游门禁
 
@@ -55,3 +55,7 @@ pwsh -NoProfile -Command "node --test contributions/desktop-playable-progress/te
 作者接入后须验证实际 status 鉴权/字段、真实前端切集与非零 seek、暂停后台增长、完整缓存即时铺满、恢复不清空以及旧请求失效，再发布。Related to #23；目前没有单独准确对应浅灰轨道语义的公开 Issue。本材料不自动关闭 Issue，#14/#64/#162 控件显隐/全屏不在范围。
 
 回滚：私有源码 revert status 字段及轨道接线/helper，恢复原展示；无需删除完整缓存或用户数据。
+
+复审补充：补上目标时长、兼容版本、片段时长和结束位置校验；非有限或越界的跳转起点返回空范围。
+
+HLS校验按[RFC 8216](https://www.rfc-editor.org/rfc/rfc8216.html#section-4.3.3.1)检查必需的 TARGETDURATION、fMP4 MAP所需的VERSION>=6，以及片段时长和标签顺序。测试片段仍为fake字节，不能代替真实媒体解码。

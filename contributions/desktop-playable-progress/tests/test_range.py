@@ -19,7 +19,7 @@ class RangeTests(unittest.TestCase):
     def output(self, second=False):
         (self.path / "init.mp4").write_bytes(b"init")
         (self.path / "seg000000.m4s").write_bytes(b"one")
-        text = '#EXTM3U\n#EXT-X-MAP:URI="init.mp4"\n#EXTINF:2,\nseg000000.m4s\n'
+        text = '#EXTM3U\n#EXT-X-VERSION:7\n#EXT-X-TARGETDURATION:3\n#EXT-X-MAP:URI="init.mp4"\n#EXTINF:2,\nseg000000.m4s\n'
         if second:
             text += '#EXTINF:3,\nseg000001.m4s\n'
         text += '#EXT-X-ENDLIST\n'
@@ -113,6 +113,46 @@ class RangeTests(unittest.TestCase):
             with self.subTest(playlist=text):
                 (self.path / "index.m3u8").write_text(text, encoding="utf-8")
                 self.assertEqual(playable_range(self.job), [0, 0])
+
+    def test_target_duration_is_required_valid_unique_and_bounds_segments(self):
+        self.output()
+        valid = (self.path / "index.m3u8").read_text(encoding="utf-8")
+        target = "#EXT-X-TARGETDURATION:3\n"
+        variants = [valid.replace(target, ""), valid.replace(target, target + target),
+                    valid.replace("#EXTINF:2,", "#EXTINF:4,"),
+                    valid.replace("#EXTINF:2,", "#EXTINF:2e0,"),
+                    valid.replace("#EXTINF:2,", "#EXTINF:2")]
+        variants += [valid.replace(target, f"#EXT-X-TARGETDURATION:{value}\n")
+                     for value in ("0", "-1", "3.0", "bad")]
+        for text in variants:
+            with self.subTest(playlist=text):
+                (self.path / "index.m3u8").write_text(text, encoding="utf-8")
+                self.assertEqual(playable_range(self.job), [0, 0])
+
+    def test_fmp4_map_requires_valid_unique_compatibility_version(self):
+        self.output()
+        valid = (self.path / "index.m3u8").read_text(encoding="utf-8")
+        version = "#EXT-X-VERSION:7\n"
+        for text in (valid.replace(version, ""), valid.replace(version, version + version),
+                     valid.replace(version, "#EXT-X-VERSION:5\n")):
+            with self.subTest(playlist=text):
+                (self.path / "index.m3u8").write_text(text, encoding="utf-8")
+                self.assertEqual(playable_range(self.job), [0, 0])
+
+    def test_invalid_window_origins_do_not_produce_invalid_json_ranges(self):
+        self.output()
+        self.job.done.set()
+        for origin in (float("nan"), float("inf"), float("-inf"), -1, 63, 64):
+            with self.subTest(origin=origin):
+                self.job.window_origin = origin
+                self.assertEqual(playable_range(self.job), [0, 0])
+
+    def test_media_after_endlist_cannot_be_reported_playable(self):
+        self.output()
+        playlist = self.path / "index.m3u8"
+        text = playlist.read_text(encoding="utf-8").replace("#EXTINF:", "#EXT-X-ENDLIST\n#EXTINF:")
+        playlist.write_text(text, encoding="utf-8")
+        self.assertEqual(playable_range(self.job), [0, 0])
 
     def test_failure_cancel_and_invalid_duration(self):
         self.output()
