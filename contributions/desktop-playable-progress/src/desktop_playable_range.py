@@ -9,9 +9,11 @@ def playable_range(job, full_cache_ready=None):
     if (job.failed or job.cancelled.is_set() or duration is None or origin is None
             or not math.isfinite(duration) or duration <= 0):
         return [0, 0]
-    if job.start_seconds and job.source and full_cache_ready:
+    if job.source and full_cache_ready:
         try:
             if full_cache_ready(job.source):
+                if job.cancelled.is_set() or job.failed:
+                    return [0, 0]
                 return [0, duration]
         except (OSError, ValueError):
             pass  # Optional disk cache must not interrupt status/playback.
@@ -21,8 +23,13 @@ def playable_range(job, full_cache_ready=None):
             return [0, 0]
         lines = (job.directory / "index.m3u8").read_text(encoding="utf-8").splitlines()
         available, pending, count, incomplete = 0.0, None, 0, False
+        mapped = False
         for line in lines:
-            if line.startswith("#EXTINF:"):
+            if line.startswith("#EXT-X-MAP:"):
+                if line != '#EXT-X-MAP:URI="init.mp4"':
+                    return [0, 0]
+                mapped = True
+            elif line.startswith("#EXTINF:"):
                 if pending is not None:
                     incomplete = True
                     break
@@ -30,7 +37,7 @@ def playable_range(job, full_cache_ready=None):
                 if not math.isfinite(pending) or pending <= 0:
                     return [0, 0]
             elif line and not line.startswith("#"):
-                if pending is None or not re.fullmatch(r"seg[0-9]{6}\.m4s", line):
+                if not mapped or pending is None or not re.fullmatch(r"seg[0-9]{6}\.m4s", line):
                     return [0, 0]
                 fragment = job.directory / line
                 if not fragment.is_file() or fragment.is_symlink() or fragment.stat().st_size == 0:

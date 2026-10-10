@@ -15,7 +15,7 @@ from desktop_playable_range import playable_range
 result["playableRange"] = playable_range(job, full_cache_ready=prefetch.cache.contains)
 ```
 
-普通会话读取 HLS EXTINF 与实际存在的连续片段；done + ENDLIST + complete.marker 才确认尾部时长。非零 seek 窗口返回 [window_origin, end]；若后台完整缓存经校验可用才返回 [0, duration]。失败/取消/未准备好返回 [0,0]。宿主负责原子完成 marker、固定本地 playlist、owner/路径与会话生命周期校验。
+有 source 的会话先查询已校验完整缓存，从0开始也一样；可用时返回 [0, duration]，返回前再次检查取消/失败。否则读取 HLS EXTINF 与实际存在的连续片段，统计前必须有指向 init.mp4 的正确 EXT-X-MAP；done + ENDLIST + complete.marker 才确认尾部时长。非零 seek 窗口返回 [window_origin, end]。失败/取消/未准备好返回 [0,0]。宿主负责原子完成 marker、固定本地 playlist、owner/路径与会话生命周期校验。
 
 集成完整缓存复用依赖另一个 `desktop-prefetch-cache` 贡献的接口或作者等价实现。没有完整缓存模块时可省略 callback，此时只报告当前会话的磁盘覆盖范围。接口仅新增两个数字，不暴露 source 路径、媒体 URL 或鉴权信息；保留现有 status 鉴权。
 
@@ -46,7 +46,7 @@ pwsh -NoProfile -Command "python -I contributions/desktop-playable-progress/test
 pwsh -NoProfile -Command "node --test contributions/desktop-playable-progress/tests/test_frontend.cjs"
 ```
 
-7项 Python fixture 验证原片不算可播、磁盘增长、缺片、完整标记、seek 缺口、完整缓存 callback、失败/取消和坏 playlist。6项 Node 测试验证完整/窗口样式、暂停刷新、恢复保留、切集旧回调、卸载、失败重试与失效缩短。它们不代替私有 API/React/WebView 接线验收。
+10项 Python fixture 验证原片不算可播、磁盘增长、缺片、完整标记、seek 缺口、完整缓存 callback、失败/取消和坏 playlist；新增从0开始命中完整缓存、init 映射以及校验期间取消/失败的回归。6项 Node 测试验证完整/窗口样式、暂停刷新、恢复保留、切集旧回调、卸载、失败重试与失效缩短。它们不代替私有 API/React/WebView 接线验收。
 
 ## 本机真实结果与上游门禁
 

@@ -61,6 +61,49 @@ class RangeTests(unittest.TestCase):
             raise OSError("cache unavailable")
         self.assertEqual(playable_range(self.job, failed), [0, 0])
 
+    def test_zero_offset_session_uses_verified_complete_cache_before_restore(self):
+        self.job.source = self.path / "source.mp4"
+        self.assertEqual(self.job.start_seconds, 0)
+        self.assertFalse((self.path / "index.m3u8").exists())
+        calls = []
+        def cached(source):
+            calls.append(source)
+            return True
+        self.assertEqual(playable_range(self.job, cached), [0, 63])
+        self.assertEqual(calls, [self.job.source])
+
+    def test_initialization_map_must_apply_to_all_counted_fragments(self):
+        self.output()
+        self.job.done.set()
+        valid = (self.path / "index.m3u8").read_text(encoding="utf-8")
+        correct = '#EXT-X-MAP:URI="init.mp4"\n'
+        variants = {
+            "missing": valid.replace(correct, ""),
+            "different": valid.replace(correct, '#EXT-X-MAP:URI="other.mp4"\n'),
+            "late": valid.replace(correct, "").replace("#EXT-X-ENDLIST", correct + "#EXT-X-ENDLIST"),
+            "changed": valid.replace("#EXT-X-ENDLIST", '#EXT-X-MAP:URI="missing.mp4"\n#EXTINF:2,\nseg000001.m4s\n#EXT-X-ENDLIST'),
+        }
+        (self.path / "seg000001.m4s").write_bytes(b"two")
+        for label, text in variants.items():
+            with self.subTest(map=label):
+                (self.path / "index.m3u8").write_text(text, encoding="utf-8")
+                self.assertEqual(playable_range(self.job), [0, 0])
+
+    def test_cache_validation_rechecks_asynchronous_cancel_or_failure(self):
+        self.job.source = self.path / "source.mp4"
+        self.job.start_seconds, self.job.window_origin = 30., 30.02
+        for flag in ("cancelled", "failed"):
+            with self.subTest(flag=flag):
+                self.job.cancelled.clear()
+                self.job.failed = False
+                def cached(_):
+                    if flag == "cancelled":
+                        self.job.cancelled.set()
+                    else:
+                        self.job.failed = True
+                    return True
+                self.assertEqual(playable_range(self.job, cached), [0, 0])
+
     def test_failure_cancel_and_invalid_duration(self):
         self.output()
         self.job.failed = True
