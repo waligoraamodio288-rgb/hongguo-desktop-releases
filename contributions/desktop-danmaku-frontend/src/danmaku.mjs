@@ -27,6 +27,10 @@ function DesktopDanmakuSettings({media, sessionKey}) {
   const [settings, setSettings] = O.useState(desktopDanmakuSettings);
   const [enabled, setEnabled] = O.useState(() => desktopSocialPreference('danmaku', true));
   const [rows, setRows] = O.useState([]), panel = O.useRef(null), hoverTimer = O.useRef(null);
+  const control = O.useRef(null), hovered = O.useRef(false);
+  const dismiss = () => {
+    if (!hovered.current && !control.current?.contains(document.activeElement)) setOpen(false);
+  };
   O.useEffect(() => () => clearTimeout(hoverTimer.current), []);
   O.useEffect(() => {
     const video = media.current;
@@ -58,9 +62,11 @@ function DesktopDanmakuSettings({media, sessionKey}) {
     return () => {observer.disconnect(); window.removeEventListener('resize', layout);};
   }, [open, list, sessionKey]);
   const update = (name, value) => desktopSocialSet(media.current, {settings: {...settings, [name]: Number(value)}});
-  return b.jsxs('span', {className: 'desktop-danmaku-control',
-    onPointerEnter: () => {clearTimeout(hoverTimer.current); setOpen(true);},
-    onPointerLeave: () => {hoverTimer.current = setTimeout(() => setOpen(false), 250);}, children: [
+  return b.jsxs('span', {ref:control, className: 'desktop-danmaku-control',
+    onPointerEnter: () => {hovered.current=true; clearTimeout(hoverTimer.current); setOpen(true);},
+    onPointerLeave: () => {hovered.current=false; hoverTimer.current = setTimeout(dismiss, 250);},
+    onFocus: () => {clearTimeout(hoverTimer.current); setOpen(true);},
+    onBlur: event => {if (!event.currentTarget.contains(event.relatedTarget)) hoverTimer.current=setTimeout(dismiss,250);}, children: [
     b.jsx('button', {className: 'desktop-danmaku-toggle', 'aria-label': '弹幕', 'aria-pressed': enabled,
       'aria-expanded': open, title: '点击开关弹幕，悬停调整设置',
       onClick: () => desktopSocialSet(media.current, {danmaku: !enabled}), children: '弹幕'}),
@@ -87,57 +93,72 @@ function DesktopDanmakuSettings({media, sessionKey}) {
         !rows.length&&b.jsx('p',{children:enabled?'暂未加载到弹幕':'开启弹幕后加载列表'})]})]})]});
 }
 
-function desktopDanmakuRows(items, settings = desktopDanmakuSettings(), previous = []) {
+function desktopDanmakuRows(items, settings = desktopDanmakuSettings(), previous = [], viewportWidth = 1000) {
   const unique = new Map();
   for (const item of items) if (item.id && item.text && Number.isInteger(item.offset_ms)) unique.set(item.id, item);
   const kept = new Map(previous.filter(row => unique.has(row.id) && row.lane < settings.lanes).map(row=>[row.id,row]));
-  const lanes = Array.from({length:settings.lanes},()=>[]), gap = settings.duration * 400;
-  for (const row of kept.values()) lanes[row.lane].push([row.offset_ms, row.offset_ms + gap]);
+  const lanes = Array.from({length:settings.lanes},()=>[]);
+  const width = text => Math.max(60,[...String(text)].slice(0,160).length*settings.fontSize);
+  const screen = Math.max(1,Math.min(1000,viewportWidth));
+  // Check the separation at both ends of the shared interval. Wider trailing
+  // comments travel faster when duration is equal, so entry spacing alone fails.
+  const separated = (a,b) => {
+    const wa=width(a.text), wb=width(b.text);
+    const gap=settings.duration*1000*Math.max((wa+16)/(screen+wa),(wb+16)/(screen+wb));
+    return Math.abs(a.offset_ms-b.offset_ms)>=gap;
+  };
+  for (const row of kept.values()) lanes[row.lane].push(row);
   return [...unique.values()].sort((a, b) => a.offset_ms - b.offset_ms || a.id.localeCompare(b.id)).flatMap(item => {
     if (kept.has(item.id)) return [kept.get(item.id)];
-    const lane = lanes.findIndex(intervals => intervals.every(([start,end]) => item.offset_ms + gap <= start || item.offset_ms >= end));
+    const lane = lanes.findIndex(intervals => intervals.every(row => separated(item,row)));
     if (lane < 0) return [];
-    lanes[lane].push([item.offset_ms, item.offset_ms + gap]);
+    lanes[lane].push(item);
     return [{id: item.id, text: [...item.text].slice(0, 160).join(''), offset_ms: item.offset_ms, lane}];
   }).slice(-300);
 }
 
 function desktopStartDanmaku(media, endpoint, status) {
   desktopLoadEmojis(endpoint);
-  const abort = new AbortController(), stage = media.closest('.player-stage');
+  const stage = media.closest('.player-stage');
   const layer = document.createElement('div'); layer.className = 'desktop-danmaku';
   layer.setAttribute('aria-hidden', 'true'); stage?.append(layer);
   let stopped = false, busy = false, generation = 0, rows = [], raw = [], last = -1, lastClock = Date.now();
   let next = 0, cursor = '', ended = false, retryAt = 0, frame;
+  let loadAbort = null, enabled = desktopSocialPreference('danmaku',true);
   let settings = desktopDanmakuSettings();
   const publish = () => {
-    media.desktopDanmaku = rows.map(({text, offset_ms, lane}) => ({text, offset_ms, lane}));
+    media.desktopDanmaku = enabled ? rows.map(({text, offset_ms, lane}) => ({text, offset_ms, lane})) : [];
     media.desktopDanmakuSettings = settings;
     media.desktopDanmakuRows = raw;
     media.dispatchEvent(new Event('desktopdanmaku'));
     media.dispatchEvent(new Event('desktopdanmakulist'));
   };
   const changed = event => {
-    if (!event.detail.settings) return;
-    settings = desktopDanmakuSettings(event.detail.settings);
-    rows = desktopDanmakuRows(raw, settings); publish();
+    if (event.detail.settings) settings = desktopDanmakuSettings(event.detail.settings);
+    if (typeof event.detail.danmaku === 'boolean' && enabled !== event.detail.danmaku) {
+      enabled = event.detail.danmaku; reset();
+    } else if (event.detail.settings) {rows = desktopDanmakuRows(raw, settings, [], viewport()); publish();}
+    if (enabled) load();
   };
+  const viewport = () => (media.clientWidth || 1000)/Math.max(.3,(media.clientHeight-84 || 562)/562);
   function reset() {
-    generation++; raw = []; rows = []; cursor = ''; ended = false; retryAt = 0;
+    generation++; loadAbort?.abort(); loadAbort=null; busy=false;
+    raw = []; rows = []; cursor = ''; ended = false; retryAt = 0;
     last = -1; lastClock = Date.now();
     next = Math.floor(Math.max(0, media.currentTime || 0) / 30) * 30000;
     publish(); layer.replaceChildren();
   }
   async function load() {
     const time = Math.max(0, media.currentTime || 0) * 1000;
-    if (busy || ended || Date.now() < retryAt || time + 5000 < next) return;
+    if (!enabled || busy || ended || Date.now() < retryAt || time + 5000 < next) return;
     busy = true; const own = generation, offset = next, ownCursor = cursor;
+    const request = new AbortController(); loadAbort=request;
     try {
-      const page = await desktopSocialRead(endpoint, 'danmaku', {offset_ms: offset, cursor: ownCursor}, abort.signal);
+      const page = await desktopSocialRead(endpoint, 'danmaku', {offset_ms: offset, cursor: ownCursor}, request.signal);
       if (stopped || own !== generation) return;
       raw = raw.filter(item => item.offset_ms >= time - 24000).concat(page.items).slice(-600);
       raw = [...new Map(raw.map(item=>[item.id,item])).values()];
-      rows = desktopDanmakuRows(raw, settings, rows); publish();
+      rows = desktopDanmakuRows(raw, settings, rows, viewport()); publish();
       const advance = page.next_offset_ms > offset;
       if (advance) {next = page.next_offset_ms; cursor = page.cursor;}
       else if (page.has_more && page.cursor && page.cursor !== ownCursor) cursor = page.cursor;
@@ -148,10 +169,11 @@ function desktopStartDanmaku(media, endpoint, status) {
       if (!stopped && own === generation && error.name !== 'AbortError') {
         retryAt = Date.now() + 5000; status('弹幕加载失败，正在重试');
       }
-    } finally {busy = false;}
+    } finally {if (loadAbort===request) {loadAbort=null;busy=false;}}
   }
   function tick() {
     if (stopped) return;
+    if (!enabled) {layer.hidden=true; frame=requestAnimationFrame(tick);return;}
     const time = Number(media.currentTime) || 0;
     const clock = Date.now(), elapsed = Math.max(0, (clock-lastClock)/1000) * (media.playbackRate || 1);
     if (last >= 0 && (time < last - .7 || time > last + Math.max(3, elapsed + .7))) reset();
@@ -183,7 +205,7 @@ function desktopStartDanmaku(media, endpoint, status) {
   }
   media.addEventListener('seeking', reset); media.addEventListener('desktopsocialsettings', changed); reset(); tick();
   return () => {
-    stopped = true; generation++; abort.abort(); cancelAnimationFrame(frame);
+    stopped = true; generation++; loadAbort?.abort(); cancelAnimationFrame(frame);
     media.removeEventListener('seeking', reset); media.removeEventListener('desktopsocialsettings', changed);
     layer.remove(); rows = []; raw = []; publish();
   };

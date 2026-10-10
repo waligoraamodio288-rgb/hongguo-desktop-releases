@@ -74,8 +74,37 @@ async function step(time){media.currentTime=time;frames.shift()?.();await new Pr
   assert.equal(run('desktopDanmakuSettings().duration'),14);
   assert.equal(run('desktopDanmakuSettings().duration'),14,'migration must happen once');
   assert.equal(run('desktopDanmakuSettings().opacity'),50);
+  const crowded=run(`desktopDanmakuRows([{id:'a',text:'x',offset_ms:0},{id:'b',text:'长'.repeat(160),offset_ms:5600}],{opacity:80,lanes:1,fontSize:28,duration:14})`);
+  assert.equal(crowded.length,1,'wide trailing row must not catch a narrow row in the same lane');
+  const spaced=run(`desktopDanmakuRows([{id:'a',text:'x',offset_ms:0},{id:'b',text:'长'.repeat(160),offset_ms:15000}],{opacity:80,lanes:1,fontSize:28,duration:14})`);
+  assert.equal(spaced.length,2);
+  // Verify the actual separation equation through the overlapping interval.
+  const safePair=run(`desktopDanmakuRows([{id:'a',text:'x',offset_ms:0},{id:'b',text:'长'.repeat(160),offset_ms:12000}],{opacity:80,lanes:1,fontSize:28,duration:14})`);
+  assert.equal(safePair.length,2);
+  for(let time=12;time<14;time+=.1){
+    const right=1000-(1000+60)*time/14+60;
+    const left=1000-(1000+4480)*(time-12)/14;
+    assert.ok(left-right>=16,'no chase collision throughout shared lifetime');
+  }
+  preferences.set('hongguo:danmaku','on'); frames=[]; requests=[];let aborted=0;
+  context.fetch=async(url,options)=>{
+    const u=new URL(url);requests.push({url:u,options});
+    if(u.searchParams.get('offset_ms')==='0')return new Promise((_,reject)=>options.signal.addEventListener('abort',()=>{aborted++;reject(new DOMException('Aborted','AbortError'));},{once:true}));
+    return {ok:true,json:async()=>({items:[{id:'new',text:'after seek',offset_ms:61000}],next_offset_ms:90000,cursor:'',has_more:false})};
+  };
+  media.currentTime=0;media.dispatchEvent=()=>{};
+  const stopSeek=run('desktopStartDanmaku(media,endpoint,()=>{})');
+  media.currentTime=70;events.get('seeking')();await step(70);
+  assert.equal(aborted,1);assert.equal(requests.at(-1).url.searchParams.get('offset_ms'),'60000');
+  events.get('desktopsocialsettings')({detail:{danmaku:false}});
+  assert.equal(media.desktopDanmaku.length,0);assert.equal(layer.children.length,0);
+  const before=requests.length;await step(95);assert.equal(requests.length,before);
+  events.get('desktopsocialsettings')({detail:{danmaku:true}});await step(95);
+  assert.ok(requests.length>before,'standalone renderer resumes when toggled on');
+  stopSeek();assert.equal(events.size,0);
   console.log('PASS: opaque cursor, media clock, pause/seek, escaping, density, cleanup');
   console.log('PASS: independent persistent drawer/danmaku preferences and settings event');
   console.log('PASS: live settings rendering, validation and persistence');
   console.log('PASS: pagination preserves in-flight lanes');
+  console.log('PASS: per-generation seek abort, standalone on/off, width-aware collision prevention');
 })().catch(e=>{console.error(e);process.exitCode=1;});
