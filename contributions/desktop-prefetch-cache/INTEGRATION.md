@@ -25,7 +25,7 @@ prefetch = EpisodePrefetcher(
 
 若 Thread.start 或 begin 抛异常：设置 job.failed=True，调用 finish（source=None），移除未启动 job 并重新抛出；不得留下 foreground 占位。finish 的可选账本错误不得覆盖宿主主错误。应用关闭调用 prefetch.close；原片 loader 中已开始的请求不强杀，依赖宿主超时退出。
 
-不要在 video.pause 时 release 会话或 close prefetch。暂停只停播放时钟，下载和转换由后端持续执行。切集 begin 会更新代际、取消后台编码并丢弃旧等待队列；已开始原片请求完成后不能污染新队列。
+不要在 video.pause 时 release 会话或 close prefetch。暂停只停播放时钟，下载和转换由后端持续执行。切集 begin 会更新代际、取消后台编码并丢弃旧等待队列；已开始原片请求完成后不能污染新队列。before_work 会拒绝过期的排队前台任务；宿主仍须取消已在运行的旧会话，并在 finally 调用 finish 释放占位。
 
 ## 顺序、容量和复用
 

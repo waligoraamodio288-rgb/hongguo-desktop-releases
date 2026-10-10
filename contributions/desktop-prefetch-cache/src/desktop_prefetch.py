@@ -70,10 +70,10 @@ class EpisodePrefetcher:
     def before_work(self, job):
         with self.condition:
             while True:
-                if job.cancelled.is_set() or self.closed:
+                if (job.cancelled.is_set() or self.closed
+                        or self.foreground.get(job.id) != self.generation):
                     raise EncodingCancelled()
-                first = min(self.foreground, key=self.foreground.get, default=None)
-                if self.busy is None and first == job.id:
+                if self.busy is None:
                     self.busy = job.id
                     return
                 self.condition.wait(0.1)

@@ -1,6 +1,7 @@
 """Complete local HLS artifacts, isolated from source downloads and sessions."""
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -74,9 +75,40 @@ class PlayableEpisodeCache:
         lines = text.splitlines()
         if not lines or lines[0] != "#EXTM3U":
             raise ValueError("Artifact playlist header is invalid")
-        if "#EXT-X-ENDLIST" not in text or '#EXT-X-MAP:URI="init.mp4"' not in text:
+        parameters = {}
+        for tag, minimum in (("TARGETDURATION", 1), ("VERSION", 6)):
+            prefix = "#EXT-X-" + tag + ":"
+            values = [line[len(prefix):] for line in lines if line.startswith(prefix)]
+            if (len(values) != 1 or not re.fullmatch(r"[0-9]{1,20}", values[0])
+                    or int(values[0]) < minimum):
+                raise ValueError("Invalid artifact HLS " + tag)
+            parameters[tag] = int(values[0])
+        if "#EXT-X-ENDLIST" not in lines:
             raise ValueError("Artifact playlist is incomplete")
-        segments = [line for line in lines if line and not line.startswith("#")]
+        mapped, ended, segments, pending = False, False, [], None
+        for line in lines:
+            if line.startswith("#EXT-X-MAP:"):
+                if line != '#EXT-X-MAP:URI="init.mp4"' or ended:
+                    raise ValueError("Invalid artifact initialization map")
+                mapped = True
+            elif line == "#EXT-X-ENDLIST":
+                if ended or pending is not None:
+                    raise ValueError("Invalid artifact ending")
+                ended = True
+            elif line.startswith("#EXTINF:"):
+                token, comma, _ = line[8:].partition(",")
+                if (ended or pending is not None or not comma
+                        or not re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", token)):
+                    raise ValueError("Invalid artifact segment duration")
+                pending = float(token)
+                if (not math.isfinite(pending) or pending <= 0
+                        or math.floor(pending + 0.5) > parameters["TARGETDURATION"]):
+                    raise ValueError("Artifact duration exceeds its HLS target")
+            elif line and not line.startswith("#"):
+                if not mapped or ended or pending is None:
+                    raise ValueError("Artifact media is outside its HLS tag scope")
+                segments.append(line)
+                pending = None
         if not segments or len(set(segments)) != len(segments) or any(
                 not re.fullmatch(r"seg[0-9]{6}\.m4s", name) for name in segments):
             raise ValueError("Invalid artifact segment names")
@@ -96,7 +128,8 @@ class PlayableEpisodeCache:
             if not plain(directory) or not plain(manifest_path):
                 return None
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-            if manifest.get("owner") != OWNER or manifest.get("source") != identity:
+            if (not isinstance(manifest, dict) or manifest.get("owner") != OWNER
+                    or manifest.get("source") != identity):
                 return None
             names = self._media_files(directory)
             if set(manifest["files"]) != set(names):
@@ -166,7 +199,11 @@ class PlayableEpisodeCache:
                 total += size
                 if (re.fullmatch(r"[0-9a-f]{64}", directory.name)
                         and (directory / "owner.marker").read_text(encoding="ascii") == OWNER):
-                    entries.append(((directory / "cache.json").stat().st_mtime_ns, directory, size))
+                    try:
+                        modified = (directory / "cache.json").stat().st_mtime_ns
+                    except FileNotFoundError:
+                        modified = directory.stat().st_mtime_ns
+                    entries.append((modified, directory, size))
             except OSError:
                 continue
         for _, directory, size in sorted(entries):

@@ -30,7 +30,7 @@ def complete_output(directory, payload=b"fragment"):
     (directory / "init.mp4").write_bytes(b"init")
     (directory / "seg000000.m4s").write_bytes(payload)
     (directory / "index.m3u8").write_text(
-        '#EXTM3U\n#EXT-X-MAP:URI="init.mp4"\n#EXTINF:2,\nseg000000.m4s\n#EXT-X-ENDLIST\n', encoding="utf-8")
+        '#EXTM3U\n#EXT-X-VERSION:7\n#EXT-X-TARGETDURATION:2\n#EXT-X-MAP:URI="init.mp4"\n#EXTINF:2,\nseg000000.m4s\n#EXT-X-ENDLIST\n', encoding="utf-8")
     (directory / "complete.marker").write_text("desktop-hls-v1\n", encoding="ascii")
 
 
@@ -186,6 +186,22 @@ class PrefetchTests(unittest.TestCase):
         self.assertEqual(value.busy, first.id)
         value.encode(source, first.directory)
         value.finish(first, SERIES, 1, source)
+        self.assertTrue(value.wait_idle(0))
+
+    def test_rapid_switch_rejects_old_waiters_and_grants_latest_slot(self):
+        value = self.make(ahead=0)
+        jobs = [Job(uuid.uuid4().hex, self.root / uuid.uuid4().hex) for _ in range(3)]
+        for episode, job in enumerate(jobs, 1):
+            value.begin(job, SERIES, episode)
+        for old in jobs[:-1]:
+            with self.assertRaises(EncodingCancelled):
+                value.before_work(old)
+        # The stale records remain until their host finally blocks run.
+        value.before_work(jobs[-1])
+        self.assertEqual(value.busy, jobs[-1].id)
+        self.assertEqual(self.calls, [])
+        for episode, job in enumerate(jobs, 1):
+            value.finish(job, SERIES, episode, None)
         self.assertTrue(value.wait_idle(0))
 
     def test_seek_window_then_current_full_before_future(self):
@@ -380,6 +396,69 @@ class PlayableCacheTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     self.cache.store(self.source, self.output)
                 self.assertFalse(self.cache.contains(self.source))
+
+    def test_required_tags_are_complete_lines_and_apply_before_media(self):
+        playlist = self.output / "index.m3u8"
+        valid = playlist.read_text(encoding="utf-8")
+        mapping = '#EXT-X-MAP:URI="init.mp4"\n'
+        variants = [valid.replace(mapping, "# comment " + mapping),
+                    valid.replace("#EXT-X-ENDLIST", "#EXT-X-ENDLIST-BROKEN"),
+                    valid.replace(mapping, "").replace("#EXT-X-ENDLIST", mapping + "#EXT-X-ENDLIST"),
+                    valid.replace("#EXTINF:", '#EXT-X-MAP:URI="other.mp4"\n#EXTINF:'),
+                    valid.replace("#EXTINF:", "#EXT-X-ENDLIST\n#EXTINF:")]
+        for text in variants:
+            with self.subTest(playlist=text):
+                playlist.write_text(text, encoding="utf-8")
+                with self.assertRaises(ValueError):
+                    self.cache.store(self.source, self.output)
+
+    def test_non_object_manifests_miss_and_playback_falls_back(self):
+        artifact = self.cache.store(self.source, self.output)
+        for manifest in (None, [], "text", 0, True):
+            with self.subTest(manifest=manifest):
+                (artifact / "cache.json").write_text(json.dumps(manifest), encoding="utf-8")
+                self.assertFalse(self.cache.contains(self.source))
+                self.assertFalse(self.cache.restore(self.source, self.root / "unused-session"))
+                replay = self.root / uuid.uuid4().hex
+                self.cache.encode(self.source, replay)
+                self.assertTrue((replay / "complete.marker").is_file())
+                self.assertTrue(self.cache.contains(self.source))
+
+    def test_owned_entry_without_manifest_can_be_evicted_and_rebuilt(self):
+        artifact = self.cache.store(self.source, self.output)
+        (artifact / "cache.json").unlink()
+        self.cache.quota_bytes = sum(p.stat().st_size for p in self.output.iterdir()) + 65536
+        self.assertFalse(self.cache.contains(self.source))
+        rebuilt = self.cache.store(self.source, self.output)
+        self.assertEqual(rebuilt, artifact)
+        self.assertTrue(self.cache.contains(self.source))
+
+    def test_required_global_hls_tags_are_valid_and_unique(self):
+        playlist = self.output / "index.m3u8"
+        valid = playlist.read_text(encoding="utf-8")
+        variants = []
+        for tag, value, invalid in (("TARGETDURATION", "2", ("0", "-1", "2.0", "bad")),
+                                    ("VERSION", "7", ("5", "7.0", "bad"))):
+            line = f"#EXT-X-{tag}:{value}\n"
+            variants += [valid.replace(line, ""), valid.replace(line, line + line)]
+            variants += [valid.replace(line, f"#EXT-X-{tag}:{bad}\n") for bad in invalid]
+        for text in variants:
+            with self.subTest(playlist=text):
+                playlist.write_text(text, encoding="utf-8")
+                with self.assertRaises(ValueError):
+                    self.cache.store(self.source, self.output)
+
+    def test_complete_artifact_requires_valid_segment_durations(self):
+        playlist = self.output / "index.m3u8"
+        valid = playlist.read_text(encoding="utf-8")
+        for text in (valid.replace("#EXTINF:2,\n", ""),
+                     *(valid.replace("#EXTINF:2,", f"#EXTINF:{value},")
+                       for value in ("nan", "inf", "-1", "0", "3", "2e0")),
+                     valid.replace("#EXTINF:2,", "#EXTINF:2")):
+            with self.subTest(playlist=text):
+                playlist.write_text(text, encoding="utf-8")
+                with self.assertRaises(ValueError):
+                    self.cache.store(self.source, self.output)
 
     def test_cancelled_commit_is_not_visible_and_stage_is_removed(self):
         with self.assertRaises(EncodingCancelled):
