@@ -87,6 +87,14 @@ class EpisodePrefetcher:
                     return
                 self.condition.wait(0.1)
 
+    def _source_complete(self, source):
+        if source is None:
+            return False
+        try:
+            return self.source_status(source).get("complete") is True
+        except Exception:
+            return False  # Optional status cannot invalidate an acquired source.
+
     def load_source(self, series_id, episode):
         with self.condition:
             generation = self.generation
@@ -96,13 +104,14 @@ class EpisodePrefetcher:
         if vid is None:
             raise ValueError("Episode media identity unavailable")
         source = self.source_loader(vid)
+        source_complete = self._source_complete(source)
         with self.condition:
             if (generation == self.generation and not self.closed
                     and self.current == {"seriesId": str(series_id), "episode": episode}):
                 self.latest_episodes = items
                 self.sources[vid] = source
                 self.current_source = source
-                self.current_source_complete = self.source_status(source)["complete"]
+                self.current_source_complete = source_complete
                 seen = {vid}
                 for index, future_vid in items:
                     if index > episode and future_vid not in seen and len(self.download_pending) < self.ahead:
@@ -167,7 +176,7 @@ class EpisodePrefetcher:
                     and not job.cancelled.is_set() and source is not None):
                 mode = getattr(job, "video_mode", "h264")
                 self.playback_mode = mode
-                if mode == "native":
+                if mode == "native" or not self.cache.available:
                     # Downloaded originals already serve native playback.
                     # Neither AAC-LC nor HE-AAC needs an additional HLS copy.
                     self.pending = []
@@ -216,6 +225,8 @@ class EpisodePrefetcher:
             failed, cancelled = False, False
             temporary = self.cache.root / ("stage-" + uuid.uuid4().hex)
             try:
+                if not self.cache.available:
+                    raise EncodingCancelled()
                 if source is None:
                     raise OSError("Source preparation failed")
                 if cancel.is_set():
@@ -265,7 +276,7 @@ class EpisodePrefetcher:
                 "schema": 2, "processId": os.getpid(), "ahead": self.ahead,
                 "cacheKind": "original-media" if self.playback_mode == "native" else "complete-playable-hls",
                 "playbackMode": self.playback_mode,
-                "currentSourceComplete": self.source_status(self.current_source)["complete"] if self.current_source is not None else False,
+                "currentSourceComplete": self._source_complete(self.current_source),
                 "current": self.current,
                 "currentPlayableComplete": self.current_complete,
                 "foregroundRequests": len(self.foreground),

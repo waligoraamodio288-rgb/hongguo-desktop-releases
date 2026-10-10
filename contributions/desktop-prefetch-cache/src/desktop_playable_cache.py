@@ -107,7 +107,7 @@ class PlayableEpisodeCache:
             raise ValueError("Artifact playlist is incomplete")
         mapped, ended, segments, pending = False, False, [], None
         for line in lines:
-            if line == "#EXT-X-GAP" or line.startswith(("#EXT-X-KEY:", "#EXT-X-SESSION-KEY:")):
+            if line == "#EXT-X-GAP" or line.startswith(("#EXT-X-KEY:", "#EXT-X-SESSION-KEY:", "#EXT-X-BYTERANGE:")):
                 raise ValueError("Unsupported local artifact HLS tag")
             if line.startswith("#EXT-X-MAP:"):
                 if line != '#EXT-X-MAP:URI="init.mp4"':
@@ -218,11 +218,13 @@ class PlayableEpisodeCache:
             path.unlink()
         directory.rmdir()
 
-    def _reserve(self, needed):
+    def _reserve(self, needed, *, replacing=None):
         if not self.available:
             raise OSError("Playable cache is unavailable")
         if not 0 <= needed <= self.quota_bytes:
             raise OSError("Playable cache reservation cannot fit")
+        if replacing is not None:
+            self._owned_children(replacing)
         entries = []
         total = 0
         for directory in self.root.iterdir():
@@ -240,6 +242,8 @@ class PlayableEpisodeCache:
                 return path.stat().st_size
             children = list(directory.iterdir())
             size = sum(size_of(p) for p in children)
+            if directory == replacing:
+                continue  # Its validated bytes leave at commit, before replacement.
             total += size
             try:
                 if any(not p.is_file() for p in children):
@@ -303,7 +307,7 @@ class PlayableEpisodeCache:
                 # Stage bytes are already counted. Evict only at commit, after
                 # all cancellable copying/hashing and manifest construction.
                 metadata_bytes = sum((stage / name).stat().st_size for name in ("owner.marker", "cache.json"))
-                self._reserve(max(0, 65536 - metadata_bytes))
+                self._reserve(max(0, 65536 - metadata_bytes), replacing=target if target.exists() else None)
                 if target.exists():
                     self._remove_owned(target)
                 os.replace(stage, target)

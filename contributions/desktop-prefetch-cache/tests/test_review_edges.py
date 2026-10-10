@@ -1,5 +1,6 @@
 """Regression cases from asynchronous upstream review; no real media or account."""
 from pathlib import Path
+import os
 import tempfile,threading,time,unittest,uuid
 from unittest.mock import patch
 from desktop_hls import EncodingCancelled
@@ -32,6 +33,43 @@ class ReviewEdges(unittest.TestCase):
             reserve.assert_not_called()
         self.assertEqual(before,{p.name:p.read_bytes() for p in unrelated.iterdir()})
 
+    def test_replacement_credits_old_target_without_evicting_unrelated_lru(self):
+        cache=self.cache();(self.output/'seg000000.m4s').write_bytes(b'x'*100000)
+        target=cache.store(self.source,self.output)
+        other=self.root/'other';other.write_bytes(b'other')
+        unrelated=cache.store(other,self.output)
+        os.utime(unrelated/'cache.json',ns=(1,1));os.utime(target/'cache.json',ns=(2,2))
+        cache.quota_bytes=sum(p.stat().st_size for d in cache.root.iterdir() for p in d.iterdir())+65536+4096
+        cache.store(self.source,self.output)
+        self.assertTrue(cache.contains(other),'replacement must preserve unrelated older cache')
+        self.assertTrue(cache.contains(self.source))
+
+    def test_disabled_cache_keeps_foreground_and_original_downloads_without_recoding(self):
+        disabled=self.root/'not-a-directory';disabled.write_bytes(b'file')
+        downloads=[];encodes=[]
+        def encode(*args,**kwargs):encodes.append(True);encoder(*args,**kwargs)
+        episodes=[{'index':n,'vid':str(10000000+n)} for n in range(1,5)]
+        value=EpisodePrefetcher(lambda _:self.source,lambda _:({},episodes),disabled,encoder=encode,
+            download_loader=lambda vid:(downloads.append(vid),self.source)[1],profile_files=PROFILE_FILES)
+        self.addCleanup(value.close);self.assertFalse(value.cache.available)
+        job=Job(uuid.uuid4().hex,self.root/'session');value.begin(job,'series',1)
+        source=value.load_source('series',1);value.before_work(job);value.encode(source,job.directory)
+        value.finish(job,'series',1,source)
+        self.assertTrue(value.wait_idle(2));self.assertEqual(len(encodes),1)
+        self.assertEqual(len(downloads),3);self.assertFalse(value.failed);self.assertFalse(value.pending)
+
+    def test_optional_status_failure_cannot_abort_loaded_source(self):
+        callbacks=(lambda _:(_ for _ in ()).throw(RuntimeError('temporary')),
+                   lambda _: {},lambda _:None)
+        for callback in callbacks:
+            value=EpisodePrefetcher(lambda _:self.source,lambda _:({},[{'index':1,'vid':'10000001'}]),
+                self.root/uuid.uuid4().hex,encoder=encoder,source_status=callback,profile_files=PROFILE_FILES)
+            job=Job(uuid.uuid4().hex,self.root/'session');value.begin(job,'series',1)
+            try:
+                self.assertIs(value.load_source('series',1),self.source)
+                self.assertFalse(value.snapshot()['currentSourceComplete'])
+            finally:value.close()
+
     def test_optional_status_callback_and_serialization_errors_are_contained(self):
         value=EpisodePrefetcher(lambda _:self.source,lambda _:({},[]),self.root/'cache',
             encoder=encoder,profile_files=PROFILE_FILES,status_path=self.root/'status.json')
@@ -43,7 +81,7 @@ class ReviewEdges(unittest.TestCase):
 
     def test_complete_cache_rejects_encryption_and_gap_tags(self):
         cache=self.cache();playlist=self.output/'index.m3u8';original=playlist.read_text(encoding='utf-8')
-        for tag in ('#EXT-X-GAP','#EXT-X-KEY:METHOD=AES-128,URI="missing"','#EXT-X-SESSION-KEY:METHOD=AES-128,URI="missing"'):
+        for tag in ('#EXT-X-GAP','#EXT-X-BYTERANGE:10@1000000','#EXT-X-KEY:METHOD=AES-128,URI="missing"','#EXT-X-SESSION-KEY:METHOD=AES-128,URI="missing"'):
             playlist.write_text(original.replace('#EXTINF:',tag+'\n#EXTINF:',1),encoding='utf-8')
             with self.assertRaises(ValueError):cache.store(self.source,self.output)
     def test_nested_unknown_stage_counts_towards_quota_without_deletion(self):
