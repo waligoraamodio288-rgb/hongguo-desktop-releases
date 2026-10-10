@@ -4,13 +4,13 @@ function desktopLoadEmojis(endpoint) {
   if (desktopEmojiRequest) return desktopEmojiRequest;
   desktopEmojiRequest = read(endpoint,'emojis').then(value=>{
     desktopEmojiCatalog = Object.assign(Object.create(null),Object.fromEntries(Object.entries(value.items || {}).filter(([name,src])=>
-      /^\[[^\[\]\r\n]{1,16}\]$/.test(name) && typeof src==='string' && src.startsWith('data:image/png;base64,') && src.length <= 1024*1024)));
+      /^\[[^\[\]\r\n]{1,16}\]$/u.test(name) && typeof src==='string' && src.startsWith('data:image/png;base64,') && src.length <= 1024*1024)));
     window.dispatchEvent(new Event('desktopemojis'));
   }).catch(()=>{desktopEmojiRequest=null;});
   return desktopEmojiRequest;
 }
 function desktopEmojiParts(text) {
-  return String(text).split(/(\[[^\[\]\r\n]{1,16}\])/g).filter(Boolean);
+  return String(text).split(/(\[[^\[\]\r\n]{1,16}\])/gu).filter(Boolean);
 }
 function DesktopEmojiText({text}) {
   return desktopEmojiParts(text).map((part,index)=>desktopEmojiCatalog[part]

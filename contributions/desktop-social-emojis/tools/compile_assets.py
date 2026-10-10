@@ -4,13 +4,18 @@ import base64
 import io
 import json
 from pathlib import Path
+import sys
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
+from desktop_emoji_assets import validate_assets
 
 def compile_assets(mapping):
     from PIL import Image
     result={}
     for name, source_path in mapping.items():
         with Image.open(source_path) as source:
-            image=source.convert('RGBA'); png=io.BytesIO(); image.save(png,format='PNG',optimize=True)
+            image=source.convert('RGBA')
+            image.thumbnail((256,256),Image.Resampling.LANCZOS)
+            png=io.BytesIO(); image.save(png,format='PNG',optimize=True)
             small=image.resize((48,48),Image.Resampling.LANCZOS)
             palette=small.convert('RGB').quantize(colors=16)
             pixels=palette.convert('RGB'); alpha=small.getchannel('A'); groups={}
@@ -49,6 +54,9 @@ def compile_assets(mapping):
                 drawings.append({'color':list(key[:3]),'alpha':key[3]/7,'paths':paths})
             result[name]={'src':'data:image/png;base64,'+base64.b64encode(png.getvalue()).decode(),
                 'resolution':48,'drawing':drawings}
+    validate_assets(result)
+    encoded=json.dumps(result,ensure_ascii=False,separators=(',',':'))+'\n'
+    if len(encoded.encode('utf8'))>16*1024*1024: raise ValueError('Emoji catalog too large')
     return result
 
 if __name__=='__main__':

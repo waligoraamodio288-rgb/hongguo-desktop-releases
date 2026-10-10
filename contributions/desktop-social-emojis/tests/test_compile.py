@@ -2,6 +2,8 @@ import importlib.util
 import sys
 import tempfile
 import unittest
+import base64
+import io
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -21,5 +23,19 @@ class CompileTests(unittest.TestCase):
             self.assertEqual(row['resolution'],48)
             self.assertTrue(row['drawing'])
             self.assertTrue(any(group['color']==[255,0,0] for group in row['drawing']))
+    def test_large_host_image_is_bounded_before_encoding(self):
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'fixture.png'
+            Image.effect_noise((2048,2048),100).convert('RGBA').save(path)
+            assets=compiler.compile_assets({'[测试]':path})
+            self.assertLess(len(assets['[测试]']['src']),1024*1024)
+            raw=base64.b64decode(assets['[测试]']['src'].split(',',1)[1])
+            with Image.open(io.BytesIO(raw)) as image:self.assertLessEqual(max(image.size),256)
+    def test_invalid_mapping_rejected_before_output(self):
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'fixture.png';Image.new('RGBA',(2,2),'red').save(path)
+            with self.assertRaises(ValueError):compiler.compile_assets({'bad':path})
 
 if __name__=='__main__':unittest.main()
