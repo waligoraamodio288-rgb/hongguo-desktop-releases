@@ -1,0 +1,89 @@
+--- a/backend/desktop_prefetch.py
++++ b/backend/desktop_prefetch.py
+@@ -74,20 +74,27 @@
+             self.latest_episodes = []
+             self.background_cancelled.set()
+             self.condition.notify_all()
+-        self._report()
+-
++            generation = self.generation
++        self._report()
++
++        return generation
+     def before_work(self, job):
+         with self.condition:
++            warm = bool(getattr(job, "prewarm_parent", None))
++            if warm:
++                self.foreground.setdefault(job.id, self.generation)
+             while True:
+                 if (job.cancelled.is_set() or self.closed
+                         or self.foreground.get(job.id) != self.generation):
+                     raise EncodingCancelled()
+-                if self.busy is None:
++                if self.busy is None and (not warm or not any(
++                        key != job.id and generation == self.generation
++                        for key, generation in self.foreground.items())):
+                     self.busy = job.id
+                     return
+                 self.condition.wait(0.1)
+ 
+-    def load_source(self, series_id, episode):
++    def load_source(self, series_id, episode, *, prepared_source=None):
+         with self.condition:
+             generation = self.generation
+         _, metadata = self.episode_loader(series_id)
+@@ -95,7 +102,7 @@
+         vid = next((vid for index, vid in items if index == episode), None)
+         if vid is None:
+             raise ValueError("Episode media identity unavailable")
+-        source = self.source_loader(vid)
++        source = prepared_source if prepared_source is not None else self.source_loader(vid)
+         with self.condition:
+             if (generation == self.generation and not self.closed
+                     and self.current == {"seriesId": str(series_id), "episode": episode}):
+@@ -121,6 +128,28 @@
+         self._report()
+         return source
+ 
++    def promote(self, job, series_id, episode):
++        if job.cancelled.is_set():
++            return
++        generation = self.begin(job, series_id, episode)
++        try:
++            source = self.load_source(series_id, episode, prepared_source=job.source)
++        except Exception:
++            source = None  # Optional future-download metadata must not affect playback.
++        with self.condition:
++            # HLS may still be encoding after its first frame is playable.
++            # Activation must retain its existing encoding slot until the
++            # actual worker finishes. If it finished during metadata loading,
++            # refresh bookkeeping now that the episode list is available.
++            finish_now = getattr(job, "_prefetch_work_finished", False) or job.video_mode == "native"
++            if finish_now and generation == self.generation:
++                self.foreground[job.id] = generation
++        if finish_now:
++            # finish reports state; never hold condition while acquiring the
++            # diagnostic report lock, whose snapshot acquires condition.
++            self.finish(job, series_id, episode, source)
++
++
+     def _download(self):
+         while True:
+             with self.condition:
+@@ -145,6 +174,7 @@
+ 
+     def finish(self, job, series_id, episode, source):
+         with self.condition:
++            job._prefetch_work_finished = True
+             expected = self.foreground.get(job.id)
+         mode = getattr(job, "video_mode", "h264")
+         # Validation hashes source/media bytes. Never hold the scheduling lock for I/O.
+@@ -159,6 +189,8 @@
+             pass  # Completion bookkeeping still releases the old foreground slot.
+         with self.condition:
+             generation = self.foreground.pop(job.id, None)
++            if getattr(job, "prewarm_parent", None):
++                generation = None
+             if self.busy == job.id:
+                 self.busy = None
+             if generation == self.generation and (job.failed or job.cancelled.is_set()):
