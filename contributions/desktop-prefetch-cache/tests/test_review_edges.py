@@ -1,0 +1,80 @@
+"""Regression cases from asynchronous upstream review; no real media or account."""
+from pathlib import Path
+import tempfile,threading,time,unittest,uuid
+from unittest.mock import patch
+from desktop_hls import EncodingCancelled
+from desktop_prefetch import EpisodePrefetcher
+from desktop_playable_cache import PlayableEpisodeCache
+from job_fixture import Job
+from test_prefetch import complete_output,encoder,PROFILE_FILES
+
+class ReviewEdges(unittest.TestCase):
+    def setUp(self):
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        self.root=Path(self.temp.name);self.source=self.root/'source.mp4';self.source.write_bytes(b'fixture')
+        self.output=self.root/'output';complete_output(self.output)
+    def cache(self,root=None):
+        return PlayableEpisodeCache(root or self.root/'cache',encoder=encoder,profile_files=PROFILE_FILES)
+    def test_inaccessible_optional_cache_does_not_break_construction(self):
+        blocked=self.root/'not-directory';blocked.write_bytes(b'file')
+        cache=self.cache(blocked/'cache')
+        self.assertFalse(cache.contains(self.source))
+        with patch('desktop_playable_cache.plain',side_effect=PermissionError('denied')):
+            disabled=self.cache(self.root/'denied')
+        self.assertFalse(disabled.contains(self.source))
+    def test_bad_owner_bytes_are_unowned_not_a_scan_failure(self):
+        cache=self.cache();unknown=cache.root/('f'*64);unknown.mkdir()
+        (unknown/'owner.marker').write_bytes(b'\xff');(unknown/'data').write_bytes(b'unknown')
+        cache.store(self.source,self.output)
+        self.assertTrue(cache.contains(self.source));self.assertTrue((unknown/'data').exists())
+    def test_cancelled_store_does_not_reserve_or_evict(self):
+        cache=self.cache()
+        with patch.object(cache,'_reserve',wraps=cache._reserve) as reserve:
+            with self.assertRaises(EncodingCancelled):cache.store(self.source,self.output,cancelled=lambda:True)
+            reserve.assert_not_called()
+    def test_lru_touch_failure_preserves_a_valid_hit(self):
+        cache=self.cache();cache.store(self.source,self.output);target=self.root/'restored'
+        with patch('desktop_playable_cache.os.utime',side_effect=PermissionError('read only')):
+            self.assertTrue(cache.restore(self.source,target))
+        self.assertTrue((target/'complete.marker').is_file())
+    def test_finish_does_not_hold_scheduler_lock_during_cache_io(self):
+        value=EpisodePrefetcher(lambda _:self.source,lambda _:({},[{'index':1,'vid':'10000001'}]),self.root/'cache',encoder=encoder,profile_files=PROFILE_FILES)
+        self.addCleanup(value.close)
+        job=Job(uuid.uuid4().hex,self.root/'session');value.begin(job,'series',1);source=value.load_source('series',1)
+        entered,release,switched=threading.Event(),threading.Event(),threading.Event()
+        def contains(*a):entered.set();release.wait(2);return False
+        def switch():value.begin(Job(uuid.uuid4().hex,self.root/'next'),'series',2);switched.set()
+        with patch.object(value.cache,'contains',side_effect=contains):
+            finish=threading.Thread(target=lambda:value.finish(job,'series',1,source));finish.start()
+            self.assertTrue(entered.wait(1));change=threading.Thread(target=switch);change.start()
+            responsive=switched.wait(.4);release.set();finish.join(2);change.join(2)
+        self.assertTrue(responsive,'begin must not wait for full-source/full-cache hashing')
+        self.assertFalse(value.pending,'old completion must not publish into the new generation')
+
+    def test_native_progressive_current_downloads_three_originals_without_encoding(self):
+        source=object();downloads=[];encodes=[]
+        episodes=[{'index':n,'vid':str(10000000+n)} for n in range(1,5)]
+        def download(vid):downloads.append(int(vid)-10000000);return self.source
+        value=EpisodePrefetcher(lambda _:source,lambda _:({},episodes),self.root/'cache',encoder=lambda *a,**k:encodes.append(a),profile_files=PROFILE_FILES,download_loader=download,source_status=lambda _:dict(kind='progressive',complete=False))
+        self.addCleanup(value.close)
+        job=Job(uuid.uuid4().hex,self.root/'session');job.video_mode='native'
+        value.begin(job,'series',1);current=value.load_source('series',1);value.finish(job,'series',1,current)
+        self.assertTrue(value.wait_idle(2));self.assertEqual(downloads,[2,3,4]);self.assertFalse(encodes)
+        self.assertEqual(value.snapshot()['cacheKind'],'original-media');self.assertFalse(value.snapshot()['currentSourceComplete'])
+    def test_blocked_stale_source_loading_does_not_reserve_encoder(self):
+        entered,release=threading.Event(),threading.Event()
+        episodes=[{'index':n,'vid':str(10000000+n)} for n in (1,2)]
+        def load(vid):
+            if vid=='10000001':entered.set();release.wait(2)
+            return self.source
+        value=EpisodePrefetcher(load,lambda _:({},episodes),self.root/'cache',encoder=encoder,profile_files=PROFILE_FILES,ahead=0)
+        self.addCleanup(value.close)
+        old=Job(uuid.uuid4().hex,self.root/'old');value.begin(old,'series',1)
+        loading=threading.Thread(target=lambda:value.load_source('series',1));loading.start();self.assertTrue(entered.wait(1))
+        new=Job(uuid.uuid4().hex,self.root/'new');value.begin(new,'series',2)
+        try:
+            value.before_work(new);self.assertEqual(value.busy,new.id)
+        finally:release.set();loading.join(2)
+        old.cancelled.set();value.finish(old,'series',1,None);new.failed=True;value.finish(new,'series',2,None)
+
+if __name__=='__main__':unittest.main()

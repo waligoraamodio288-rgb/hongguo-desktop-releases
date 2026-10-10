@@ -12,10 +12,13 @@ from desktop_playable_cache import PlayableEpisodeCache, OWNER, plain
 
 class EpisodePrefetcher:
     def __init__(self, source_loader, episode_loader, cache_root, *, encoder,
-                 ahead=3, status_path=None, quota_bytes=2 * 1024 ** 3, profile_files=None):
+                 ahead=3, status_path=None, quota_bytes=2 * 1024 ** 3, download_loader=None,
+                 profile_files=None, source_status=None):
         if not isinstance(ahead, int) or isinstance(ahead, bool) or not 0 <= ahead <= 3:
             raise ValueError("Invalid prefetch window")
         self.source_loader, self.episode_loader = source_loader, episode_loader
+        self.download_loader = download_loader or source_loader
+        self.source_status = source_status or (lambda source: {"kind": "local", "complete": True})
         self.cache = PlayableEpisodeCache(cache_root, encoder=encoder, quota_bytes=quota_bytes, profile_files=profile_files)
         self.ahead, self.status_path = ahead, Path(status_path) if status_path else None
         self.condition = threading.Condition()
@@ -29,6 +32,9 @@ class EpisodePrefetcher:
         self.failed = []
         self.current = None
         self.current_complete = False
+        self.current_source_complete = False
+        self.current_source = None
+        self.playback_mode = None
         self.latest_episodes = []
         self.worker = None
         self.downloader = None
@@ -62,6 +68,9 @@ class EpisodePrefetcher:
             self.failed = []
             self.current = {"seriesId": str(series_id), "episode": episode}
             self.current_complete = False
+            self.current_source_complete = False
+            self.current_source = None
+            self.playback_mode = None
             self.latest_episodes = []
             self.background_cancelled.set()
             self.condition.notify_all()
@@ -92,6 +101,8 @@ class EpisodePrefetcher:
                     and self.current == {"seriesId": str(series_id), "episode": episode}):
                 self.latest_episodes = items
                 self.sources[vid] = source
+                self.current_source = source
+                self.current_source_complete = self.source_status(source)["complete"]
                 seen = {vid}
                 for index, future_vid in items:
                     if index > episode and future_vid not in seen and len(self.download_pending) < self.ahead:
@@ -120,7 +131,7 @@ class EpisodePrefetcher:
                 self.download_active = task
             self._report()
             try:
-                source = self.source_loader(task[2])
+                source = self.download_loader(task[2])
             except Exception:
                 source = None
             with self.condition:
@@ -134,6 +145,13 @@ class EpisodePrefetcher:
 
     def finish(self, job, series_id, episode, source):
         with self.condition:
+            expected = self.foreground.get(job.id)
+        mode = getattr(job, "video_mode", "h264")
+        # Validation hashes source/media bytes. Never hold the scheduling lock for I/O.
+        current_complete = (self.cache.contains(source, mode)
+                            if expected is not None and source is not None
+                            and mode != "native" and not job.failed and not job.cancelled.is_set() else False)
+        with self.condition:
             generation = self.foreground.pop(job.id, None)
             if self.busy == job.id:
                 self.busy = None
@@ -141,28 +159,36 @@ class EpisodePrefetcher:
                 self.download_pending = []
             if (generation == self.generation and not self.closed and not job.failed
                     and not job.cancelled.is_set() and source is not None):
-                self.current_complete = self.cache.contains(source)
-                selected, seen = [], set()
-                current_vid = next((vid for index, vid in self.latest_episodes if index == episode), None)
-                if current_vid:
-                    seen.add(current_vid)
-                    if not self.current_complete:
-                        selected.append((episode, current_vid))
-                future_count = 0
-                for index, vid in self.latest_episodes:
-                    if index > episode and vid not in seen and future_count < self.ahead:
-                        selected.append((index, vid))
-                        seen.add(vid)
-                        future_count += 1
-                self.pending = [(generation, index, vid) for index, vid in selected]
-                if self.pending and (self.worker is None or not self.worker.is_alive()):
-                    self.worker = threading.Thread(target=self._run, name="desktop-playable-prefetch", daemon=True)
-                    try:
-                        self.worker.start()
-                    except RuntimeError:
-                        self.failed.extend(task[1] for task in self.pending)
-                        self.pending = []
-                        self.worker = None
+                mode = getattr(job, "video_mode", "h264")
+                self.playback_mode = mode
+                if mode == "native":
+                    # Downloaded originals already serve native playback.
+                    # Neither AAC-LC nor HE-AAC needs an additional HLS copy.
+                    self.pending = []
+                    self.current_complete = False  # This field describes HLS completeness.
+                else:
+                    self.current_complete = current_complete
+                    selected, seen = [], set()
+                    current_vid = next((vid for index, vid in self.latest_episodes if index == episode), None)
+                    if current_vid:
+                        seen.add(current_vid)
+                        if not self.current_complete:
+                            selected.append((episode, current_vid))
+                    future_count = 0
+                    for index, vid in self.latest_episodes:
+                        if index > episode and vid not in seen and future_count < self.ahead:
+                            selected.append((index, vid))
+                            seen.add(vid)
+                            future_count += 1
+                    self.pending = [(generation, index, vid, mode) for index, vid in selected]
+                    if self.pending and (self.worker is None or not self.worker.is_alive()):
+                        self.worker = threading.Thread(target=self._run, name="desktop-playable-prefetch", daemon=True)
+                        try:
+                            self.worker.start()
+                        except RuntimeError:
+                            self.failed.extend(task[1] for task in self.pending)
+                            self.pending = []
+                            self.worker = None
             self.condition.notify_all()
         self._report()
 
@@ -188,12 +214,16 @@ class EpisodePrefetcher:
                     raise OSError("Source preparation failed")
                 if cancel.is_set():
                     raise EncodingCancelled()
-                if not self.cache.contains(source):
+                mode = task[3]
+                if not self.cache.contains(source, mode):
                     with self.cache.guard:
+                        if cancel.is_set():
+                            raise EncodingCancelled()
                         self.cache._reserve(min(self.cache.quota_bytes, 512 * 1024 ** 2 + 65536))
-                    self.cache.encoder(source, temporary, cancelled=cancel.is_set)
+                    extra = {"video_mode": "copy"} if mode == "copy" else {}
+                    self.cache.encoder(source, temporary, cancelled=cancel.is_set, **extra)
                     (temporary / "owner.marker").write_text(OWNER, encoding="ascii")
-                    self.cache.store(source, temporary, cancel.is_set)
+                    self.cache.store(source, temporary, cancel.is_set, video_mode=mode)
                 if cancel.is_set():
                     raise EncodingCancelled()
             except EncodingCancelled:
@@ -231,7 +261,10 @@ class EpisodePrefetcher:
         with self.condition:
             return {
                 "schema": 2, "processId": os.getpid(), "ahead": self.ahead,
-                "cacheKind": "complete-playable-hls", "current": self.current,
+                "cacheKind": "original-media" if self.playback_mode == "native" else "complete-playable-hls",
+                "playbackMode": self.playback_mode,
+                "currentSourceComplete": self.source_status(self.current_source)["complete"] if self.current_source is not None else False,
+                "current": self.current,
                 "currentPlayableComplete": self.current_complete,
                 "foregroundRequests": len(self.foreground),
                 "pendingEpisodes": [task[1] for task in self.pending],

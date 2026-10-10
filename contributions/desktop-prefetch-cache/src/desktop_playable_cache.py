@@ -28,13 +28,15 @@ def plain(path):
 class PlayableEpisodeCache:
     def __init__(self, root, *, encoder, quota_bytes=2 * 1024 ** 3, profile_files=None):
         root = Path(root)
+        self.available = True
         try:
             root.mkdir(parents=True, exist_ok=True)
+            if not plain(root):
+                raise ValueError("Playable cache root cannot be a reparse point")
+            self.root = root.resolve()
         except OSError:
-            pass  # An unavailable optional cache must not prevent API startup.
-        if not plain(root):
-            raise ValueError("Playable cache root cannot be a reparse point")
-        self.root = root.resolve()
+            self.available = False
+            self.root = root.absolute()  # Do not probe an inaccessible optional path again.
         self.encoder = encoder
         self.quota_bytes = quota_bytes
         self.guard = threading.RLock()
@@ -42,17 +44,26 @@ class PlayableEpisodeCache:
         # Explicit files permit portable tests without distributing host modules.
         # Production default fingerprints the real encoder AND budget policy.
         profile_files = tuple(profile_files) if profile_files is not None else (
-            module / name for name in ("desktop_hls.py", "desktop_hls_budget.py"))
+            module / name for name in ("desktop_hls.py", "desktop_hls_budget.py", "desktop_codec.py")
+            if name != "desktop_codec.py" or (module / name).is_file())
         self.profile = hashlib.sha256(b"playable-hls-full-v1" + b"".join(
             Path(path).read_bytes() for path in profile_files
         )).hexdigest()
 
-    def _identity(self, source):
-        source = Path(source)
-        info = source.stat()
-        value = {"name": source.name, "size": info.st_size,
-                 "mtimeNs": info.st_mtime_ns, "profile": self.profile,
-                 "sha256": self._digest(source)}
+    def _identity(self, source, video_mode="h264"):
+        if video_mode not in ("h264", "copy"):
+            raise ValueError("Unknown desktop video mode")
+        identity = getattr(source, "cache_identity", None)
+        if callable(identity):
+            value = {**identity(), "profile": self.profile}
+        else:
+            source = Path(source)
+            info = source.stat()
+            value = {"name": source.name, "size": info.st_size,
+                     "mtimeNs": info.st_mtime_ns, "profile": self.profile,
+                     "sha256": self._digest(source)}
+        if video_mode != "h264":
+            value["videoMode"] = video_mode
         return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest(), value
 
     @staticmethod
@@ -120,9 +131,11 @@ class PlayableEpisodeCache:
                 raise ValueError("Artifact fragment is unavailable")
         return names
 
-    def _validated(self, source):
+    def _validated(self, source, video_mode="h264"):
+        if not self.available:
+            return None
         try:
-            key, identity = self._identity(source)
+            key, identity = self._identity(source, video_mode)
             directory = self.root / key
             manifest_path = directory / "cache.json"
             if not plain(directory) or not plain(manifest_path):
@@ -142,13 +155,13 @@ class PlayableEpisodeCache:
         except (OSError, ValueError, KeyError, TypeError):
             return None
 
-    def contains(self, source):
+    def contains(self, source, video_mode="h264"):
         with self.guard:
-            return self._validated(source) is not None
+            return self._validated(source, video_mode) is not None
 
-    def restore(self, source, directory, cancelled=lambda: False):
+    def restore(self, source, directory, cancelled=lambda: False, *, video_mode="h264"):
         with self.guard:
-            artifact = self._validated(source)
+            artifact = self._validated(source, video_mode)
             if artifact is None:
                 return False
             cached, names = artifact
@@ -163,7 +176,10 @@ class PlayableEpisodeCache:
                     # copyfile may create a partial destination before raising.
                     created.append(destination)
                     shutil.copyfile(cached / name, destination)
-                os.utime(cached / "cache.json", None)
+                try:
+                    os.utime(cached / "cache.json", None)
+                except OSError:
+                    pass  # Read-only metadata must not destroy an otherwise valid hit.
                 return True
             except BaseException:
                 for path in created:
@@ -186,6 +202,8 @@ class PlayableEpisodeCache:
         directory.rmdir()
 
     def _reserve(self, needed):
+        if not self.available:
+            raise OSError("Playable cache is unavailable")
         entries = []
         total = 0
         for directory in self.root.iterdir():
@@ -204,7 +222,7 @@ class PlayableEpisodeCache:
                     except FileNotFoundError:
                         modified = directory.stat().st_mtime_ns
                     entries.append((modified, directory, size))
-            except OSError:
+            except (OSError, UnicodeError):
                 continue
         for _, directory, size in sorted(entries):
             if total + needed <= self.quota_bytes:
@@ -214,9 +232,11 @@ class PlayableEpisodeCache:
         if total + needed > self.quota_bytes:
             raise OSError("Playable cache budget is exhausted")
 
-    def store(self, source, directory, cancelled=lambda: False):
+    def store(self, source, directory, cancelled=lambda: False, *, video_mode="h264"):
+        if cancelled():
+            raise EncodingCancelled()
         with self.guard:
-            key, identity = self._identity(source)
+            key, identity = self._identity(source, video_mode)
             names = self._media_files(Path(directory))
             needed = sum((Path(directory) / name).stat().st_size for name in names) + 65536
             directory = Path(directory)
@@ -224,6 +244,8 @@ class PlayableEpisodeCache:
                      and re.fullmatch(r"stage-[0-9a-f]{32}", directory.name)
                      and plain(directory)
                      and (directory / "owner.marker").read_text(encoding="ascii") == OWNER)
+            if cancelled():
+                raise EncodingCancelled()
             self._reserve(65536 if adopt else needed)
             stage = directory if adopt else self.root / ("stage-" + uuid.uuid4().hex)
             if not adopt:
@@ -252,10 +274,10 @@ class PlayableEpisodeCache:
                     self._remove_owned(stage)
 
     def encode(self, source, directory, on_ready=lambda: None, *, cancelled=lambda: False,
-               start_seconds=0, on_window=lambda origin, duration: None):
+               start_seconds=0, on_window=lambda origin, duration: None, video_mode="h264"):
         if not start_seconds:
             try:
-                if self.restore(source, directory, cancelled):
+                if self.restore(source, directory, cancelled, video_mode=video_mode):
                     on_ready()
                     return
             except OSError:
@@ -264,8 +286,9 @@ class PlayableEpisodeCache:
             self.encoder(source, directory, on_ready, cancelled=cancelled,
                          start_seconds=start_seconds, on_window=on_window)
         else:
-            self.encoder(source, directory, on_ready, cancelled=cancelled)
+            extra = {"video_mode": "copy"} if video_mode == "copy" else {}
+            self.encoder(source, directory, on_ready, cancelled=cancelled, **extra)
             try:
-                self.store(source, directory, cancelled)
+                self.store(source, directory, cancelled, video_mode=video_mode)
             except (OSError, ValueError):
                 pass
