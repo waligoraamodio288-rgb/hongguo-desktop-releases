@@ -1,0 +1,107 @@
+--- a/contributions/desktop-native-playback/src/desktop_native.py
++++ b/contributions/desktop-native-playback/src/desktop_native.py
+@@ -22,7 +22,7 @@
+
+ def validate_control(body):
+     if not isinstance(body, dict) or not body or set(body) - {
+-            "paused", "rate", "volume", "muted", "seek", "rect", "visible", "danmaku", "danmakuSettings"}:
++            "paused", "rate", "volume", "muted", "seek", "rect", "visible", "danmaku", "danmakuSettings", "occlusion"}:
+         raise ValueError("Invalid native control")
+     for name in ("paused", "muted", "visible"):
+         if name in body and type(body[name]) is not bool:
+@@ -43,6 +43,11 @@
+         result['danmaku'] = validate_danmaku(body['danmaku'])
+     if 'danmakuSettings' in body:
+         result['danmakuSettings'] = validate_settings(body['danmakuSettings'])
++    if 'occlusion' in body:
++        value = body['occlusion']
++        if (not isinstance(value, list) or len(value) not in (0, 4)
++                or any(type(v) is not int or not 0 <= v <= 32768 for v in value)):
++            raise ValueError('Invalid native occlusion')
+     return result
+
+
+@@ -119,6 +124,13 @@
+                 function = getattr(self.dll, name)
+                 function.argtypes, function.restype = args, result
+             self.user = C.WinDLL("user32", use_last_error=True)
++            self.gdi = C.WinDLL("gdi32", use_last_error=True)
++            for name, args, result in (
++                    ("CreateRectRgn", [C.c_int] * 4, C.c_void_p),
++                    ("CombineRgn", [C.c_void_p] * 3 + [C.c_int], C.c_int),
++                    ("DeleteObject", [C.c_void_p], W.BOOL)):
++                function = getattr(self.gdi, name)
++                function.argtypes, function.restype = args, result
+             self.enum_callback = C.WINFUNCTYPE(W.BOOL, W.HWND, W.LPARAM)
+             self.window_callback = C.WINFUNCTYPE(C.c_ssize_t, W.HWND, W.UINT, W.WPARAM, W.LPARAM)
+             definitions = {
+@@ -139,6 +151,7 @@
+                 "CreateWindowExW": ([W.DWORD, W.LPCWSTR, W.LPCWSTR, W.DWORD, C.c_int,
+                     C.c_int, C.c_int, C.c_int, W.HWND, W.HMENU, W.HINSTANCE, C.c_void_p], W.HWND),
+                 "SetWindowPos": ([W.HWND, W.HWND, C.c_int, C.c_int, C.c_int, C.c_int, W.UINT], W.BOOL),
++                "SetWindowRgn": ([W.HWND, C.c_void_p, W.BOOL], C.c_int),
+                 "ShowWindow": ([W.HWND, C.c_int], W.BOOL),
+                 "DestroyWindow": ([W.HWND], W.BOOL),
+                 "PeekMessageW": ([C.POINTER(W.MSG), W.HWND, W.UINT, W.UINT, W.UINT], W.BOOL),
+@@ -288,6 +301,7 @@
+         last_progress, last_position, slow_since = initial, None, None
+         retried = False
+         frame_ready = False
++        occlusion = []
+         danmaku_track = DanmakuTrack()  # pass assets=validated_emoji_assets for vector emojis
+         progressive = isinstance(self.job.source, ProgressiveSource)
+         media_uri = str(self.job.source) if not progressive else self.job.stream_url
+@@ -370,9 +384,33 @@
+                         if not user.GetClientRect(self.parent, C.byref(client)):
+                             raise RuntimeError("Desktop parent unavailable")
+                         width, height = min(width, max(1, client.right - x)), min(height, max(1, client.bottom - y))
+-                        user.SetWindowPos(hwnd, W.HWND(0), x, y, width, height, 0x0010)
++                        if not user.SetWindowPos(hwnd, W.HWND(0), x, y, width, height, 0x0010):
++                            raise RuntimeError("Native bounds update failed")
+                     if "visible" in command:
+                         user.ShowWindow(hwnd, 4 if command["visible"] else 0)
++                    if "occlusion" in command:
++                        occlusion = command["occlusion"]
++                    if "rect" in command or "occlusion" in command:
++                        if not occlusion:
++                            user.SetWindowRgn(hwnd, None, True)
++                        else:
++                            # Reveal the WebView settings panel without resizing
++                            # or hiding the native video surface behind it.
++                            client = W.RECT()
++                            if not user.GetClientRect(hwnd, C.byref(client)):
++                                raise RuntimeError("Native surface unavailable")
++                            ox, oy, ow, oh = occlusion
++                            region = self.host.gdi.CreateRectRgn(0, 0, client.right, client.bottom)
++                            cutout = self.host.gdi.CreateRectRgn(ox, oy, ox + ow, oy + oh)
++                            try:
++                                if not region or not cutout or not self.host.gdi.CombineRgn(region, region, cutout, 4):
++                                    raise RuntimeError("Native panel clipping failed")
++                                if not user.SetWindowRgn(hwnd, region, True):
++                                    raise RuntimeError("Native panel clipping failed")
++                                region = None  # successful SetWindowRgn transfers ownership
++                            finally:
++                                if region: self.host.gdi.DeleteObject(region)
++                                if cutout: self.host.gdi.DeleteObject(cutout)
+                     danmaku_track.update(command)
+                     for key, option in (("paused", "pause"), ("rate", "speed"), ("volume", "volume"), ("muted", "mute")):
+                         if key in command:
+@@ -437,6 +475,10 @@
+                         raise SourceReadError("Native media input timed out")
+                     retry_software()
+                     continue
++                surface = W.RECT()
++                surface_origin = W.POINT(0, 0)
++                user.GetClientRect(hwnd, C.byref(surface))
++                user.MapWindowPoints(hwnd, self.parent, C.byref(surface_origin), 1)
+                 with self.guard:
+                     self.data.update(state="ended" if eof else "buffering" if buffering else "ready" if output_ready else "preparing",
+                                      time=position, duration=player.number("duration", self.job.duration),
+@@ -449,6 +491,7 @@
+                                      bufferEnd=min(buffer_end, self.job.duration or buffer_end),
+                                      audioExclusive=player.get("audio-exclusive"), audioOutput=player.get("current-ao"),
+                                      frameDrops=player.number("frame-drop-count"), decoderDrops=player.number("decoder-frame-drop-count"),
++                                     occlusion=list(occlusion), surfaceRect=[surface_origin.x, surface_origin.y, surface.right, surface.bottom],
+                                      **danmaku_track.snapshot(position))
+                 self.stop.wait(.04)
+         except SourceReadError:

@@ -1,0 +1,13 @@
+{
+  "name": "hongguo-social-layout-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/run.mjs"
+  },
+  "devDependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "playwright": "1.58.2"
+  }
+}
