@@ -10,6 +10,7 @@ import io
 import re
 import threading
 import time
+from email.utils import parsedate_to_datetime
 
 import requests
 from urllib.parse import urlsplit
@@ -42,6 +43,7 @@ class ProgressiveSource:
         self.seen = set()
         self.received = 0
         self.validator = None
+        self.if_range = None
         self.network_failed = threading.Event()
         self.reading = threading.Event()
 
@@ -74,8 +76,8 @@ class ProgressiveSource:
                 return b""
             end = start + self.block_size - 1
             headers = {"Range": f"bytes={start}-{end}", "Accept-Encoding": "identity"}
-            if self.validator:
-                headers["If-Range"] = self.validator
+            if self.if_range:
+                headers["If-Range"] = self.if_range
             try:
                 self.reading.set()
                 for attempt in range(3):
@@ -84,7 +86,8 @@ class ProgressiveSource:
                     try:
                         value, total, validator = self._range(start, end, headers, cancelled)
                         break
-                    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
+                    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError,
+                            requests.exceptions.ChunkedEncodingError):
                         if cancelled():
                             raise InterruptedError("Media read cancelled")
                         if attempt == 2:
@@ -140,6 +143,15 @@ class ProgressiveSource:
                     raise SourceReadError("Provider range exceeded its bounds")
             if len(data) != last - first + 1:
                 raise SourceReadError("Incomplete provider byte range")
+            etag = response.headers.get("ETag")
+            last_modified = response.headers.get("Last-Modified")
+            self.if_range = etag if etag and not etag.startswith("W/") else None
+            if self.if_range is None and last_modified:
+                try:
+                    if parsedate_to_datetime(last_modified).tzinfo is not None:
+                        self.if_range = last_modified
+                except (ValueError, TypeError, OverflowError):
+                    pass
             return bytes(data), total, validator
         finally:
             if response is not None:

@@ -229,6 +229,12 @@ class NativeTests(unittest.TestCase):
         self.assertEqual(calls,[job.id])
 
     def test_hardware_error_retries_software_once_and_preserves_controls(self):
+        self.hardware_recovery()
+
+    def test_eof_without_a_frame_cannot_publish_ended_and_retries_once(self):
+        self.hardware_recovery(empty_eof=True)
+
+    def hardware_recovery(self,empty_eof=False):
         # This fault cannot be reliably provoked on every physical GPU. The
         # production NativeSession recovery is exercised with a bounded driver.
         class Driver:
@@ -247,8 +253,8 @@ class NativeTests(unittest.TestCase):
                 self.commands.append(args)
                 if args[0]=='loadfile':
                     self.loads+=1
-                    driver.events.append(Event(21,0,0,None))
-                    if self.loads==1:
+                    if not empty_eof:driver.events.append(Event(21,0,0,None))
+                    if self.loads==1 and not empty_eof:
                         def error():
                             fields=(C.c_int*2)(4,-12); driver.holds.append(fields)
                             driver.events.append(Event(7,0,0,C.cast(fields,C.c_void_p).value))
@@ -256,7 +262,7 @@ class NativeTests(unittest.TestCase):
             def get(self,key):
                 return {'hwdec-current':'d3d11va' if self.loads==1 else 'no','pause':'yes',
                         'current-vo':'gpu','video-out-params':'frame','audio-device':'auto',
-                        'audio-exclusive':'no'}.get(key)
+                        'audio-exclusive':'no','eof-reached':'yes' if empty_eof else 'no'}.get(key)
             def number(self,key,default=0):
                 return {'time-pos':12.5,'video-params/w':1920,'video-params/h':1080,'duration':87}.get(key,default)
             def close(self): self.handle=None
@@ -276,6 +282,10 @@ class NativeTests(unittest.TestCase):
         self.assertTrue(session.data['softwareRetried'])
         player=created[0]
         self.assertEqual(player.loads,2)
+        if empty_eof:
+            self.assertEqual(session.data['state'],'failed')
+            self.assertFalse(session.data.get('outputReady'))
+            return
         self.assertIn(('set','start',12.5),player.commands)
         self.assertIn(('set','speed',3),player.commands)
         self.assertIn(('set','volume',40.0),player.commands)

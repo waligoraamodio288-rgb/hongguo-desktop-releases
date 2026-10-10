@@ -103,6 +103,34 @@ class StreamTests(unittest.TestCase):
         self.assertEqual(attempts, [(3, 10), (3, 10)])
         self.assertFalse(good.network_failed.is_set())
 
+    def test_truncated_chunked_response_is_closed_and_retried_from_block_start(self):
+        source,_=source_for(b'x'*200000)
+        first=Response(b'x'*200000,0,65535);second=Response(b'x'*200000,0,65535)
+        def chunks(_):
+            yield b'x'*16000
+            raise requests.exceptions.ChunkedEncodingError('private-url')
+        first.iter_content=chunks
+        with patch.object(source,'_request',side_effect=[first,second]) as request:
+            self.assertEqual(source.reader().read(10),b'x'*10)
+        self.assertEqual(request.call_count,2);self.assertTrue(first.closed and second.closed)
+        self.assertEqual(source.received,65536);self.assertFalse(source.network_failed.is_set())
+
+    def test_weak_etag_is_compared_but_not_sent_as_if_range(self):
+        for date in (None,'invalid','Wed, 21 Oct 2015 07:28:00 GMT'):
+            headers=[];payload=b'x'*150000
+            def request(*args,**kwargs):
+                headers.append(dict(kwargs['headers']))
+                start,end=map(int,kwargs['headers']['Range'][6:].split('-'))
+                response=Response(payload,start,min(end,len(payload)-1))
+                response.headers['ETag']='W/"version"'
+                if date:response.headers['Last-Modified']=date
+                return response
+            source=ProgressiveSource('https://fixture.invalid/media',request=request,identity='weak')
+            source.block(0,lambda:False);source.block(1,lambda:False)
+            self.assertEqual(source.validator,'W/"version"')
+            self.assertEqual(headers[1].get('If-Range'),date if date and date!='invalid' else None)
+            self.assertFalse(source.network_failed.is_set())
+
     def test_persistent_timeout_is_bounded_and_sanitized(self):
         source, _ = source_for(b'x' * 200000)
         with patch.object(source, '_request', side_effect=requests.exceptions.ReadTimeout('private-url')) as request:

@@ -403,6 +403,9 @@ class NativeSession:
                     # Native renderer must not cover the existing trusted UI
                     # input surface without restoring click/key forwarding.
                     output_ready = self.forward_input(hwnd)
+                if eof and not output_ready:
+                    retry_software()
+                    continue
                 avsync = player.number("avsync")
                 buffering = progressive and (player.get("paused-for-cache") == "yes"
                                              or not output_ready and self.job.source.reading.is_set())
@@ -433,7 +436,7 @@ class NativeSession:
                     retry_software()
                     continue
                 with self.guard:
-                    self.data.update(state="ended" if eof else "buffering" if buffering else "ready" if output_ready else "preparing",
+                    self.data.update(state="ended" if eof and output_ready else "buffering" if buffering else "ready" if output_ready else "preparing",
                                      time=position, duration=player.number("duration", self.job.duration),
                                      paused=paused, rate=player.number("speed", desired["rate"]),
                                      volume=player.number("volume", desired["volume"] * 100) / 100,

@@ -100,6 +100,7 @@ function desktopNativePlayback(media, url, initialPosition, callbacks, preparati
     if (disposed || !Number.isFinite(value)) return;
     if (delegated) {delegated.seek(value); return;}
     state.time = Math.max(0, Math.min(state.duration || 86400, value));
+    state.ended = false;
     seekPending = state.time; state.seeking = true; reportedSeek = true;
     callbacks.onSeekTarget?.(state.time); event('seeking');
     queue({seek: state.time});

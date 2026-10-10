@@ -36,3 +36,5 @@ pwsh -NoProfile -Command "node contributions/desktop-native-playback/tests/test_
 [Issue对应关系与关闭条件](ISSUES.md)。回滚时在私有源码revert播放接线和新增模块，恢复原HLS入口；保留用户原片与观看记录，不直接删除未知缓存。材料提交、应用接入、发布与Issue验收分别记录。
 
 复审修复：max_jobs限制总会话数；max_workers只限制copy/H.264实际编码，native准备不占编码槽。HlsJobs在有会话时自行启动回收线程，无后续请求也按idle_seconds清理，宿主shutdown调用jobs.close()。Range连接超时3秒、无数据读超时10秒，Timeout/ConnectionError最多尝试3次；每次重新校验Range/validator并丢弃失败的部分块，取消在读取和退避间检查。协议错误不重试；重试耗尽才报告source-read。[Requests超时说明](https://requests.readthedocs.io/en/stable/user/advanced/#timeouts)。新增真实3.2秒HTTP停顿恢复、重试关闭响应、取消、编码并发和无请求到期回归。
+
+第二轮复审：截断 Range 丢弃后有界重试；弱 ETag 仅比较身份，不发送 If-Range；未出首帧的 EOF 先重试软件解码，再明确失败；EOF 后 seek 清除 ended，恢复播放保留所选目标。当前 Python 33 项通过、1 项可选 HEVC 跳过，Node 回归通过。
