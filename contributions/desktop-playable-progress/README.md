@@ -73,3 +73,5 @@ pwsh -NoProfile -Command "python -I contributions/desktop-playable-progress/test
 复核审查回执后按[RFC8216 §4.3.3.4](https://www.rfc-editor.org/rfc/rfc8216.html#section-4.3.3.4)允许单个ENDLIST出现在列表任意位置；它只表示不再追加，不是解析终止符。新增前置/媒体标签间位置与尾部不完整EXTINF回归，重复ENDLIST仍拒绝。
 
 缺失片段只截断连续可播前缀，仍验证后续标签和媒体URI，防止尾部重复ENDLIST或非法MAP被遗漏；缺口之后已有的片段不累加。
+
+第二轮复审：含 EXT-X-GAP 的清单不报告可播，即使同名片段存在也返回空范围。当前 Python 22 项、Node 6 项通过。

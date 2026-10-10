@@ -40,7 +40,7 @@ def playable_range(job, full_cache_ready=None, *, native_state=None):
             return [0, 0]
         # This adapter serves clear local fMP4 only. A fragment cannot prove
         # decryptability, even when an encrypted playlist has ENDLIST.
-        if any(line.startswith(("#EXT-X-KEY:", "#EXT-X-SESSION-KEY:")) for line in lines):
+        if any(line == "#EXT-X-GAP" or line.startswith(("#EXT-X-KEY:", "#EXT-X-SESSION-KEY:")) for line in lines):
             return [0, 0]
         parameters = {}
         for tag, minimum in (("TARGETDURATION", 1), ("VERSION", 6)):

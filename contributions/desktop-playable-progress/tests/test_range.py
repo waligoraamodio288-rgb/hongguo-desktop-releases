@@ -43,6 +43,7 @@ class RangeTests(unittest.TestCase):
         self.output();self.job.done.set();playlist=self.path/'index.m3u8'
         original=playlist.read_text(encoding='utf-8')
         for tag in ('#EXT-X-KEY:METHOD=AES-128,URI="missing.key"',
+                    '#EXT-X-GAP',
                     '#EXT-X-SESSION-KEY:METHOD=SAMPLE-AES,URI="key"',
                     '#EXT-X-KEY:METHOD=NONE'):
             playlist.write_text(original.replace('#EXTINF:',tag+'\n#EXTINF:',1),encoding='utf-8')
