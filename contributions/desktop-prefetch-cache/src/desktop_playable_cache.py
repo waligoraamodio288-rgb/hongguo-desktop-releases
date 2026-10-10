@@ -99,16 +99,16 @@ class PlayableEpisodeCache:
         mapped, ended, segments, pending = False, False, [], None
         for line in lines:
             if line.startswith("#EXT-X-MAP:"):
-                if line != '#EXT-X-MAP:URI="init.mp4"' or ended:
+                if line != '#EXT-X-MAP:URI="init.mp4"':
                     raise ValueError("Invalid artifact initialization map")
                 mapped = True
             elif line == "#EXT-X-ENDLIST":
-                if ended or pending is not None:
+                if ended:
                     raise ValueError("Invalid artifact ending")
                 ended = True
             elif line.startswith("#EXTINF:"):
                 token, comma, _ = line[8:].partition(",")
-                if (ended or pending is not None or not comma
+                if (pending is not None or not comma
                         or not re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", token)):
                     raise ValueError("Invalid artifact segment duration")
                 pending = float(token)
@@ -116,11 +116,11 @@ class PlayableEpisodeCache:
                         or math.floor(pending + 0.5) > parameters["TARGETDURATION"]):
                     raise ValueError("Artifact duration exceeds its HLS target")
             elif line and not line.startswith("#"):
-                if not mapped or ended or pending is None:
+                if not mapped or pending is None:
                     raise ValueError("Artifact media is outside its HLS tag scope")
                 segments.append(line)
                 pending = None
-        if not segments or len(set(segments)) != len(segments) or any(
+        if pending is not None or not segments or len(set(segments)) != len(segments) or any(
                 not re.fullmatch(r"seg[0-9]{6}\.m4s", name) for name in segments):
             raise ValueError("Invalid artifact segment names")
         # The marker is the commit signal, including when restoring a session.

@@ -15,6 +15,16 @@ class ReviewEdges(unittest.TestCase):
         self.output=self.root/'output';complete_output(self.output)
     def cache(self,root=None):
         return PlayableEpisodeCache(root or self.root/'cache',encoder=encoder,profile_files=PROFILE_FILES)
+    def test_single_endlist_is_valid_anywhere_but_trailing_extinf_is_not_complete(self):
+        cache=self.cache();playlist=self.output/'index.m3u8'
+        body=playlist.read_text(encoding='utf-8').replace('#EXT-X-ENDLIST\n','')
+        for anchor in ('#EXT-X-MAP:', '#EXTINF:', 'seg000000.m4s'):
+            with self.subTest(anchor=anchor):
+                playlist.write_text(body.replace(anchor,'#EXT-X-ENDLIST\n'+anchor,1),encoding='utf-8')
+                cache.store(self.source,self.output);self.assertTrue(cache.contains(self.source))
+        playlist.write_text(body+'#EXT-X-ENDLIST\n#EXTINF:2,\n',encoding='utf-8')
+        with self.assertRaises(ValueError):cache.store(self.source,self.output)
+
     def test_inaccessible_optional_cache_does_not_break_construction(self):
         blocked=self.root/'not-directory';blocked.write_bytes(b'file')
         cache=self.cache(blocked/'cache')
