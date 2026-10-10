@@ -1,0 +1,228 @@
+"""Complete local HLS artifacts, isolated from source downloads and sessions."""
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import stat
+import threading
+import uuid
+
+from desktop_hls import EncodingCancelled
+
+
+OWNER = "desktop-playable-cache-v1"
+
+
+def plain(path):
+    try:
+        return not (path.lstat().st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT)
+    except AttributeError:
+        return not path.is_symlink()
+    except FileNotFoundError:
+        return True
+
+
+class PlayableEpisodeCache:
+    def __init__(self, root, *, encoder, quota_bytes=2 * 1024 ** 3, profile_files=None):
+        root = Path(root)
+        try:
+            root.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass  # An unavailable optional cache must not prevent API startup.
+        if not plain(root):
+            raise ValueError("Playable cache root cannot be a reparse point")
+        self.root = root.resolve()
+        self.encoder = encoder
+        self.quota_bytes = quota_bytes
+        self.guard = threading.RLock()
+        module = Path(__file__).parent
+        # Explicit files permit portable tests without distributing host modules.
+        # Production default fingerprints the real encoder AND budget policy.
+        profile_files = tuple(profile_files) if profile_files is not None else (
+            module / name for name in ("desktop_hls.py", "desktop_hls_budget.py"))
+        self.profile = hashlib.sha256(b"playable-hls-full-v1" + b"".join(
+            Path(path).read_bytes() for path in profile_files
+        )).hexdigest()
+
+    def _identity(self, source):
+        source = Path(source)
+        info = source.stat()
+        value = {"name": source.name, "size": info.st_size,
+                 "mtimeNs": info.st_mtime_ns, "profile": self.profile}
+        return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest(), value
+
+    @staticmethod
+    def _digest(path):
+        digest = hashlib.sha256()
+        with path.open("rb") as stream:
+            for block in iter(lambda: stream.read(1024 * 1024), b""):
+                digest.update(block)
+        return digest.hexdigest()
+
+    @staticmethod
+    def _media_files(directory):
+        if not plain(directory) or not directory.is_dir():
+            raise ValueError("Invalid artifact directory")
+        marker = directory / "complete.marker"
+        index = directory / "index.m3u8"
+        if not plain(marker) or not plain(index) or marker.read_text(encoding="ascii") != "desktop-hls-v1\n":
+            raise ValueError("Artifact completion is unavailable")
+        text = index.read_text(encoding="utf-8")
+        if "#EXT-X-ENDLIST" not in text or '#EXT-X-MAP:URI="init.mp4"' not in text:
+            raise ValueError("Artifact playlist is incomplete")
+        segments = [line for line in text.splitlines() if line and not line.startswith("#")]
+        if not segments or len(set(segments)) != len(segments) or any(
+                not re.fullmatch(r"seg[0-9]{6}\.m4s", name) for name in segments):
+            raise ValueError("Invalid artifact segment names")
+        names = ["index.m3u8", "init.mp4", "complete.marker", *segments]
+        for name in names:
+            path = directory / name
+            if not plain(path) or not path.is_file() or path.stat().st_size == 0:
+                raise ValueError("Artifact fragment is unavailable")
+        return names
+
+    def _validated(self, source):
+        try:
+            key, identity = self._identity(source)
+            directory = self.root / key
+            manifest_path = directory / "cache.json"
+            if not plain(directory) or not plain(manifest_path):
+                return None
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            if manifest.get("owner") != OWNER or manifest.get("source") != identity:
+                return None
+            names = self._media_files(directory)
+            if set(manifest["files"]) != set(names):
+                return None
+            for name in names:
+                item = directory / name
+                if manifest["files"][name] != {"bytes": item.stat().st_size, "sha256": self._digest(item)}:
+                    return None
+            return directory, names
+        except (OSError, ValueError, KeyError, TypeError):
+            return None
+
+    def contains(self, source):
+        with self.guard:
+            return self._validated(source) is not None
+
+    def restore(self, source, directory, cancelled=lambda: False):
+        with self.guard:
+            artifact = self._validated(source)
+            if artifact is None:
+                return False
+            cached, names = artifact
+            directory = Path(directory)
+            directory.mkdir(parents=False, exist_ok=False)
+            created = []
+            try:
+                for name in names:
+                    if cancelled():
+                        raise EncodingCancelled()
+                    destination = directory / name
+                    shutil.copyfile(cached / name, destination)
+                    created.append(destination)
+                os.utime(cached / "cache.json", None)
+                return True
+            except BaseException:
+                for path in created:
+                    path.unlink(missing_ok=True)
+                directory.rmdir()
+                raise
+
+    def _remove_owned(self, directory):
+        if (directory.parent != self.root or not plain(directory)
+                or not re.fullmatch(r"(?:[0-9a-f]{64}|stage-[0-9a-f]{32})", directory.name)):
+            raise ValueError("Unsafe playable cache cleanup")
+        children = list(directory.iterdir())
+        if any(not plain(path) or not path.is_file() for path in children):
+            raise ValueError("Unknown content in playable cache")
+        owner = directory / "owner.marker"
+        if not owner.is_file() or owner.read_text(encoding="ascii") != OWNER:
+            raise ValueError("Unowned playable cache directory")
+        for path in children:
+            path.unlink()
+        directory.rmdir()
+
+    def _reserve(self, needed):
+        entries = []
+        total = 0
+        for directory in self.root.iterdir():
+            if not re.fullmatch(r"(?:[0-9a-f]{64}|stage-[0-9a-f]{32})", directory.name) or not plain(directory) or not directory.is_dir():
+                continue
+            try:
+                children = list(directory.iterdir())
+                if any(not plain(p) or not p.is_file() for p in children):
+                    continue
+                size = sum(p.stat().st_size for p in children)
+                total += size
+                if (re.fullmatch(r"[0-9a-f]{64}", directory.name)
+                        and (directory / "owner.marker").read_text(encoding="ascii") == OWNER):
+                    entries.append(((directory / "cache.json").stat().st_mtime_ns, directory, size))
+            except OSError:
+                continue
+        for _, directory, size in sorted(entries):
+            if total + needed <= self.quota_bytes:
+                return
+            self._remove_owned(directory)
+            total -= size
+        if total + needed > self.quota_bytes:
+            raise OSError("Playable cache budget is exhausted")
+
+    def store(self, source, directory, cancelled=lambda: False):
+        with self.guard:
+            key, identity = self._identity(source)
+            names = self._media_files(Path(directory))
+            needed = sum((Path(directory) / name).stat().st_size for name in names) + 65536
+            directory = Path(directory)
+            adopt = (directory.parent == self.root
+                     and re.fullmatch(r"stage-[0-9a-f]{32}", directory.name)
+                     and plain(directory)
+                     and (directory / "owner.marker").read_text(encoding="ascii") == OWNER)
+            self._reserve(65536 if adopt else needed)
+            stage = directory if adopt else self.root / ("stage-" + uuid.uuid4().hex)
+            if not adopt:
+                stage.mkdir()
+                (stage / "owner.marker").write_text(OWNER, encoding="ascii")
+            try:
+                files = {}
+                for name in names:
+                    if cancelled():
+                        raise EncodingCancelled()
+                    target = stage / name
+                    if not adopt:
+                        shutil.copyfile(directory / name, target)
+                    files[name] = {"bytes": target.stat().st_size, "sha256": self._digest(target)}
+                if cancelled():
+                    raise EncodingCancelled()
+                manifest = {"owner": OWNER, "source": identity, "files": files}
+                (stage / "cache.json").write_text(json.dumps(manifest), encoding="utf-8")
+                target = self.root / key
+                if target.exists():
+                    self._remove_owned(target)
+                os.replace(stage, target)
+                return target
+            finally:
+                if stage.exists():
+                    self._remove_owned(stage)
+
+    def encode(self, source, directory, on_ready=lambda: None, *, cancelled=lambda: False,
+               start_seconds=0, on_window=lambda origin, duration: None):
+        if not start_seconds:
+            try:
+                if self.restore(source, directory, cancelled):
+                    on_ready()
+                    return
+            except OSError:
+                pass
+        if start_seconds:
+            self.encoder(source, directory, on_ready, cancelled=cancelled,
+                         start_seconds=start_seconds, on_window=on_window)
+        else:
+            self.encoder(source, directory, on_ready, cancelled=cancelled)
+            try:
+                self.store(source, directory, cancelled)
+            except (OSError, ValueError):
+                pass
