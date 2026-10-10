@@ -45,6 +45,17 @@ class RangeTests(unittest.TestCase):
         (self.path / "seg000001.m4s").write_bytes(b"two")
         self.assertEqual(playable_range(self.job), [0, 5])
 
+    def test_missing_fragment_stops_coverage_but_not_playlist_validation(self):
+        self.output(second=True)
+        playlist=self.path/'index.m3u8'
+        body=playlist.read_text(encoding='utf8').replace('#EXT-X-ENDLIST\n','')
+        playlist.write_text(body+'#EXTINF:2,\nseg000002.m4s\n#EXT-X-ENDLIST\n',encoding='utf8')
+        (self.path/'seg000002.m4s').write_bytes(b'three')
+        self.assertEqual(playable_range(self.job),[0,2])
+        for tail in ('#EXT-X-ENDLIST\n', '#EXT-X-MAP:URI="bad.mp4"\n', '#EXTINF:2,\n../bad\n'):
+            playlist.write_text(body.replace('#EXTM3U\n','#EXTM3U\n#EXT-X-ENDLIST\n',1)+tail,encoding='utf8')
+            self.assertEqual(playable_range(self.job),[0,0])
+
     def test_committed_complete_covers_duration_but_missing_fragment_does_not(self):
         self.output()
         self.job.done.set()

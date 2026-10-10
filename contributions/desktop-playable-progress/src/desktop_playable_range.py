@@ -55,8 +55,7 @@ def playable_range(job, full_cache_ready=None, *, native_state=None):
                 mapped = True
             elif line.startswith("#EXTINF:"):
                 if pending is not None:
-                    incomplete = True
-                    break
+                    return [0, 0]
                 token, comma, _ = line[8:].partition(",")
                 if not comma or not re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", token):
                     return [0, 0]
@@ -72,12 +71,13 @@ def playable_range(job, full_cache_ready=None, *, native_state=None):
                 if not mapped or pending is None or not re.fullmatch(r"seg[0-9]{6}\.m4s", line):
                     return [0, 0]
                 fragment = job.directory / line
-                if not fragment.is_file() or fragment.is_symlink() or fragment.stat().st_size == 0:
-                    incomplete = True
-                    break
-                available += pending
+                if not incomplete:
+                    if not fragment.is_file() or fragment.is_symlink() or fragment.stat().st_size == 0:
+                        incomplete = True
+                    else:
+                        available += pending
+                        count += 1
                 pending = None
-                count += 1
         if not count:
             return [0, 0]
         end = min(duration, origin + available)
