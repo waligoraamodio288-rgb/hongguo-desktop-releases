@@ -1,0 +1,10 @@
+/* Adapt this selector to the existing track; --played remains playback position. */
+.playback-track {
+  background:
+    linear-gradient(to right, #fb7299 var(--played, 0%), transparent var(--played, 0%)),
+    linear-gradient(to right,
+      #6668 var(--buffered-start, 0%),
+      #aaa var(--buffered-start, 0%),
+      #aaa var(--buffered, 0%),
+      #6668 var(--buffered, 0%));
+}
