@@ -1,0 +1,76 @@
+--- a/backend/desktop_native.py
++++ b/backend/desktop_native.py
+@@ -14,6 +14,8 @@
+ import threading
+ import time
+ from desktop_stream import ProgressiveSource, SourceReadError
++
++CACHE_FILE_BUDGET = 512 * 1024 ** 2
+ 
+ DLL_SHA256 = "34780746a0273a4fcae42dfe262a28984a426a238939474afd3a1561b450bbef"
+ 
+@@ -281,6 +283,7 @@
+         last_progress, last_position, slow_since = initial, None, None
+         retried = False
+         frame_ready = False
++        preload_limited = False
+         progressive = isinstance(self.job.source, ProgressiveSource)
+         media_uri = str(self.job.source) if not progressive else self.job.stream_url
+         # Starting paused allows the frontend to place the surface and apply
+@@ -322,9 +325,14 @@
+             for key, value in options.items():
+                 player.option(key, value)
+             if progressive:
+-                for key, value in {"cache": "yes", "cache-secs": "12", "demuxer-readahead-secs": "12",
+-                                   "demuxer-max-bytes": "32MiB", "cache-pause": "yes",
+-                                   "cache-pause-wait": "1", "demuxer-lavf-format": "mov"}.items():
++                # Pausing stops presentation, not input. Keep packet payloads
++                # on disk, using the already-owned session cleanup directory.
++                self.job.directory.mkdir(exist_ok=True)
++                for key, value in {"cache": "yes", "cache-secs": "86400", "demuxer-readahead-secs": "86400",
++                                   "demuxer-max-bytes": "32MiB", "demuxer-max-back-bytes": "32MiB",
++                                   "cache-on-disk": "yes", "demuxer-cache-dir": str(self.job.directory),
++                                   "demuxer-cache-unlink-files": "immediate", "demuxer-cache-wait": "no",
++                                   "cache-pause": "yes", "cache-pause-wait": "1", "demuxer-lavf-format": "mov"}.items():
+                     player.option(key, value)
+                 if self.job.stream_key:
+                     player.option("http-header-fields", "x-api-key: " + self.job.stream_key)
+@@ -400,14 +408,28 @@
+                 buffering = progressive and (player.get("paused-for-cache") == "yes"
+                                              or not output_ready and self.job.source.reading.is_set())
+                 buffer_start, buffer_end = 0.0, self.job.duration or 0.0
++                cache_file_bytes, cache_complete = 0, False
+                 if progressive:
+                     buffer_start = position
+                     buffer_end = max(position, player.number("demuxer-cache-time", position))
+                     try:
+-                        ranges = json.loads(player.get("demuxer-cache-state") or "{}").get("seekable-ranges", [])
++                        cache_state = json.loads(player.get("demuxer-cache-state") or "{}")
++                        ranges = cache_state.get("seekable-ranges", [])
++                        cache_file_bytes = max(0, int(cache_state.get("file-cache-bytes", 0)))
++                        if cache_file_bytes >= CACHE_FILE_BUDGET and not preload_limited:
++                            # The append-only file is retained until close. Stop
++                            # its growth while continuing bounded memory reads;
++                            # a resource limit is never a decoder failure.
++                            player.command("set", "cache-on-disk", "no")
++                            player.command("set", "cache-secs", "12")
++                            player.command("set", "demuxer-readahead-secs", "12")
++                            preload_limited = True
++                        cache_complete = bool(cache_state.get("bof-cached") and cache_state.get("eof-cached") and len(ranges) == 1)
+                         selected = next((r for r in ranges if r["start"] - .5 <= position <= r["end"] + .5), None)
+                         if selected:
+                             buffer_start, buffer_end = max(0, selected["start"]), selected["end"]
++                        if cache_complete:
++                            buffer_start, buffer_end = 0, self.job.duration or buffer_end
+                     except (ValueError, TypeError, KeyError):
+                         pass
+                 if last_position is None or abs(position - last_position) > .01 or paused or seeking:
+@@ -434,6 +456,8 @@
+                                      width=width, height=height, decoder="software" if hwdec == "no" else "hardware" if hwdec else "probing",
+                                      hwdec=hwdec, avsync=avsync, audioDevice=player.get("audio-device"),
+                                      buffering=buffering, outputReady=output_ready, bufferStart=buffer_start,
++                                     cacheFileBytes=cache_file_bytes, cacheComplete=cache_complete,
++                                     preloadLimited=preload_limited,
+                                      bufferEnd=min(buffer_end, self.job.duration or buffer_end),
+                                      audioExclusive=player.get("audio-exclusive"), audioOutput=player.get("current-ao"),
+                                      frameDrops=player.number("frame-drop-count"), decoderDrops=player.number("decoder-frame-drop-count"))
