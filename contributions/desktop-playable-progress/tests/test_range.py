@@ -39,6 +39,15 @@ class RangeTests(unittest.TestCase):
         self.job.source.write_bytes(b"raw")
         self.assertEqual(playable_range(self.job), [0, 0])
 
+    def test_encryption_tags_do_not_claim_playable_fragments(self):
+        self.output();self.job.done.set();playlist=self.path/'index.m3u8'
+        original=playlist.read_text(encoding='utf-8')
+        for tag in ('#EXT-X-KEY:METHOD=AES-128,URI="missing.key"',
+                    '#EXT-X-SESSION-KEY:METHOD=SAMPLE-AES,URI="key"',
+                    '#EXT-X-KEY:METHOD=NONE'):
+            playlist.write_text(original.replace('#EXTINF:',tag+'\n#EXTINF:',1),encoding='utf-8')
+            self.assertEqual(playable_range(self.job),[0,0])
+
     def test_disk_growth_without_play_events_and_missing_fragment(self):
         self.output(second=True)
         self.assertEqual(playable_range(self.job), [0, 2])
