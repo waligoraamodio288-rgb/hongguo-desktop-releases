@@ -15,6 +15,55 @@ class ReviewEdges(unittest.TestCase):
         self.output=self.root/'output';complete_output(self.output)
     def cache(self,root=None):
         return PlayableEpisodeCache(root or self.root/'cache',encoder=encoder,profile_files=PROFILE_FILES)
+    def test_nested_unknown_stage_counts_towards_quota_without_deletion(self):
+        cache=self.cache();stage=cache.root/('stage-'+'a'*32)
+        (stage/'unknown').mkdir(parents=True)
+        payload=stage/'unknown'/'data';payload.write_bytes(b'x'*1000)
+        cache.quota_bytes=1000
+        with self.assertRaises(OSError):cache._reserve(1)
+        self.assertEqual(payload.read_bytes(),b'x'*1000)
+
+    def test_cancellation_during_commit_hash_preserves_lru(self):
+        cache=self.cache();target=cache.store(self.source,self.output)
+        self.source.write_bytes(b'changed')
+        cache.quota_bytes=sum(p.stat().st_size for p in target.iterdir())+65536
+        stopped=threading.Event();original=cache._digest
+        def digest(path,cancelled=lambda:False):
+            if path.name=='seg000000.m4s':stopped.set()
+            return original(path,cancelled)
+        with patch.object(cache,'_digest',side_effect=digest):
+            with self.assertRaises(EncodingCancelled):cache.store(self.source,self.output,stopped.is_set)
+        self.assertTrue((target/'complete.marker').exists())
+
+    def test_new_generation_prefetch_runs_while_stale_loader_is_blocked(self):
+        encoded=threading.Event()
+        episodes=[{'index':n,'vid':str(10000000+n)} for n in (1,2)]
+        def encode(*args,**kwargs):encoder(*args,**kwargs);encoded.set()
+        value=EpisodePrefetcher(lambda _:self.source,lambda _:({},episodes),self.root/'cache',
+            encoder=encode,profile_files=PROFILE_FILES,ahead=0)
+        self.addCleanup(value.close)
+        old=Job(uuid.uuid4().hex,self.root/'old');value.begin(old,'series',1)
+        new=Job(uuid.uuid4().hex,self.root/'new');value.begin(new,'series',2)
+        source=value.load_source('series',2);value.before_work(new)
+        value.finish(new,'series',2,source)
+        self.assertTrue(encoded.wait(1),'stale foreground must not block current background')
+        old.cancelled.set();value.finish(old,'series',1,None)
+
+    def test_background_cancel_does_not_evict_before_encode(self):
+        entered=threading.Event();release=threading.Event()
+        def encode(*args,**kwargs):
+            entered.set();release.wait(2);raise EncodingCancelled()
+        value=EpisodePrefetcher(lambda _:self.source,lambda _:({},[{'index':1,'vid':'10000001'}]),
+            self.root/'cache',encoder=encode,profile_files=PROFILE_FILES,ahead=0)
+        self.addCleanup(value.close)
+        target=value.cache.store(self.source,self.output)
+        value.cache.quota_bytes=sum(p.stat().st_size for p in target.iterdir())+65536
+        self.source.write_bytes(b'new source')
+        job=Job(uuid.uuid4().hex,self.root/'job');value.begin(job,'series',1)
+        source=value.load_source('series',1);value.finish(job,'series',1,source)
+        try:
+            self.assertTrue(entered.wait(1));self.assertTrue(target.exists())
+        finally:release.set()
     def test_single_endlist_is_valid_anywhere_but_trailing_extinf_is_not_complete(self):
         cache=self.cache();playlist=self.output/'index.m3u8'
         body=playlist.read_text(encoding='utf-8').replace('#EXT-X-ENDLIST\n','')

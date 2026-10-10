@@ -203,7 +203,7 @@ class EpisodePrefetcher:
             with self.condition:
                 self.condition.wait_for(lambda: self.closed or (
                     self.pending and self.pending[0][2] in self.sources
-                    and not self.foreground and self.busy is None))
+                    and self.generation not in self.foreground.values() and self.busy is None))
                 if self.closed:
                     return
                 task = self.pending.pop(0)
@@ -222,10 +222,6 @@ class EpisodePrefetcher:
                     raise EncodingCancelled()
                 mode = task[3]
                 if not self.cache.contains(source, mode, cancelled=cancel.is_set):
-                    with self.cache.guard:
-                        if cancel.is_set():
-                            raise EncodingCancelled()
-                        self.cache._reserve(min(self.cache.quota_bytes, 512 * 1024 ** 2 + 65536))
                     extra = {"video_mode": "copy"} if mode == "copy" else {}
                     self.cache.encoder(source, temporary, cancelled=cancel.is_set, **extra)
                     (temporary / "owner.marker").write_text(OWNER, encoding="ascii")

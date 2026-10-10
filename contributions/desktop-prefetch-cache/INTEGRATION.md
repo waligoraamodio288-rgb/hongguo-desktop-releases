@@ -4,7 +4,7 @@
 
 ## 必需宿主接口
 
-- `desktop_hls.EncodingCancelled`；`encode_hls(source, directory, on_ready=lambda: None, *, cancelled=lambda: False, start_seconds=0, on_window=None)`。取消须轮询；成功输出 init.mp4、segNNNNNN.m4s、index.m3u8（ENDLIST）以及最后提交的 `complete.marker`（内容 `desktop-hls-v1\n`）。失败不能提交 marker。
+- `desktop_hls.EncodingCancelled`；`encode_hls(source, directory, on_ready=lambda: None, *, cancelled=lambda: False, start_seconds=0, on_window=None, video_mode="h264")`。适配器必须转发 `job.video_mode`（copy/h264）给 `prefetch.encode`；copy 包括 seek 窗口也不能静默退回 h264。取消须轮询；成功输出 init.mp4、segNNNNNN.m4s、index.m3u8（ENDLIST）以及最后提交的 `complete.marker`（内容 `desktop-hls-v1\n`）。失败不能提交 marker。
 - 指纹默认读取实际 `desktop_hls.py`、`desktop_hls_budget.py` 及同目录存在的 `desktop_codec.py`；修改解码/编码/预算策略会使旧可播缓存失效。仅测试使用 `profile_files` 注入自造文件。生产若文件布局不同，必须传入实际策略文件，不能使用 fixture。
 - 当前原片 loader 接收媒体 ID，可返回稳定本地 Path 或 ProgressiveSource；`download_loader` 返回已完整下载并核验的 Path，专供后三集。接入渐进源时传入 `source_status=desktop_stream.source_progress`；默认回调只适用于完整本地 Path。它必须幂等、线程安全、请求有超时，不能让前台与后台写坏同一原片。后台仅一个下载线程，但可与前台请求重叠。
 - 剧集 loader 返回 `(details, [{"index": 正整数, "vid": "8至24位数字"}, ...])`。调度器排序、去重并取后续最多3个媒体。

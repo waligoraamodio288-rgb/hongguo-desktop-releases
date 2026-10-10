@@ -222,12 +222,22 @@ class PlayableEpisodeCache:
         for directory in self.root.iterdir():
             if not re.fullmatch(r"(?:[0-9a-f]{64}|stage-[0-9a-f]{32})", directory.name) or not plain(directory) or not directory.is_dir():
                 continue
+            # Unknown nested content still occupies disk, but is never evicted.
+            # Fail closed on unreadable content or links rather than count it as zero.
+            def size_of(path):
+                if not plain(path):
+                    raise OSError("Cannot account for a linked cache entry")
+                if path.is_dir():
+                    return sum(size_of(child) for child in path.iterdir())
+                if not path.is_file():
+                    raise OSError("Cannot account for an unknown cache entry")
+                return path.stat().st_size
+            children = list(directory.iterdir())
+            size = sum(size_of(p) for p in children)
+            total += size
             try:
-                children = list(directory.iterdir())
-                if any(not plain(p) or not p.is_file() for p in children):
+                if any(not p.is_file() for p in children):
                     continue
-                size = sum(p.stat().st_size for p in children)
-                total += size
                 if (re.fullmatch(r"[0-9a-f]{64}", directory.name)
                         and (directory / "owner.marker").read_text(encoding="ascii") == OWNER):
                     try:
@@ -255,7 +265,6 @@ class PlayableEpisodeCache:
         with self.guard:
             key, identity = self._identity(source, video_mode, cancelled)
             names = self._media_files(Path(directory))
-            needed = sum((Path(directory) / name).stat().st_size for name in names) + 65536
             directory = Path(directory)
             adopt = (directory.parent == self.root
                      and re.fullmatch(r"stage-[0-9a-f]{32}", directory.name)
@@ -263,7 +272,6 @@ class PlayableEpisodeCache:
                      and (directory / "owner.marker").read_text(encoding="ascii") == OWNER)
             if cancelled():
                 raise EncodingCancelled()
-            self._reserve(65536 if adopt else needed)
             stage = directory if adopt else self.root / ("stage-" + uuid.uuid4().hex)
             if not adopt:
                 stage.mkdir()
@@ -281,6 +289,12 @@ class PlayableEpisodeCache:
                     raise EncodingCancelled()
                 manifest = {"owner": OWNER, "source": identity, "files": files}
                 (stage / "cache.json").write_text(json.dumps(manifest), encoding="utf-8")
+                if cancelled():
+                    raise EncodingCancelled()
+                # Stage bytes are already counted. Evict only at commit, after
+                # all cancellable copying/hashing and manifest construction.
+                metadata_bytes = sum((stage / name).stat().st_size for name in ("owner.marker", "cache.json"))
+                self._reserve(max(0, 65536 - metadata_bytes))
                 target = self.root / key
                 if target.exists():
                     self._remove_owned(target)
