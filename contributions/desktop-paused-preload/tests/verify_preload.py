@@ -18,6 +18,33 @@ import urllib.request
 from unittest.mock import patch
 
 
+def preload_outcome(value):
+    native = value['native']
+    if native['preloadLimited']:
+        return 'limited'
+    if native['cacheComplete']:
+        return 'complete'
+    return None
+
+
+def budget_stable(byte_samples, budget, range_bytes):
+    # The caller samples for three seconds after the cap. Allow one pending
+    # Range read, but require the last second (six samples) to stop growing.
+    return (len(byte_samples) >= 16 and
+            max(byte_samples) <= budget + range_bytes and
+            len(set(byte_samples[-6:])) == 1)
+
+
+def wait_server_started(server, thread, timeout=5):
+    deadline = time.monotonic() + timeout
+    while not server.started:
+        if not thread.is_alive():
+            raise RuntimeError('Test API exited before listening')
+        if time.monotonic() >= deadline:
+            raise TimeoutError('Test API did not start')
+        time.sleep(.01)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--run', type=Path, required=True)
@@ -40,7 +67,7 @@ def main():
     from desktop_native import NativeHost, NativeSession
     from desktop_hls_service import HlsJobs, make_router
     from desktop_prefetch import EpisodePrefetcher
-    from desktop_stream import source_progress
+    from desktop_stream import ProgressiveSource, source_progress
     from progressive_fixture import ProgressiveFixture
     from fastapi import FastAPI
     import uvicorn
@@ -106,15 +133,28 @@ def main():
             started=time.monotonic()
             while time.monotonic()-started<60:
                 value=request('/'+identifier+'/status');report['pausedSamples'].append(value)
-                if args.cache_budget and value['native']['preloadLimited']:break
-                if not args.cache_budget and value['native']['cacheComplete']:break
+                if preload_outcome(value):break
                 time.sleep(.2)
+            limited = preload_outcome(value) == 'limited'
+            if limited:
+                # A flag only confirms that the option commands were issued.
+                # Observe the byte count afterwards to catch ignored commands.
+                byte_samples = [value['native']['cacheFileBytes']]
+                for _ in range(15):
+                    time.sleep(.2)
+                    value = request('/'+identifier+'/status')
+                    report['pausedSamples'].append(value)
+                    byte_samples.append(value['native']['cacheFileBytes'])
+                check('disk-budget-growth-stabilizes',
+                      budget_stable(byte_samples, module.CACHE_FILE_BUDGET, ProgressiveSource.block_size),
+                      {'bytes': byte_samples, 'observationSeconds': 3,
+                       'allowedOvershootBytes': ProgressiveSource.block_size})
             samples=report['pausedSamples']
             check('pause-position-fixed',all(s['native']['paused'] and abs(s['native']['time'])<.1 for s in samples))
-            if not args.cache_budget:
+            if not limited:
                 check('paused-bytes-and-range-advance',value['sourceProgress']['receivedBytes']>initial['sourceProgress']['receivedBytes'] and
                       value['native']['bufferEnd']>initial['native']['bufferEnd'],{'initial':initial,'last':value})
-            if args.cache_budget:
+            if limited:
                 check('disk-budget-keeps-original-decoder',value['native']['preloadLimited'] and
                       value['native']['state']=='ready' and not encodes,value)
             else:
@@ -125,8 +165,11 @@ def main():
             for rate in (2,3):
                 request('/'+identifier+'/control','POST',{'paused':False,'rate':rate,'volume':0})
                 state=wait(identifier,lambda s:s['native']['rate']==rate and not s['native']['paused'])
-                position=state['native']['time'];time.sleep(1.2)
-                state=request('/'+identifier+'/status')['native']
+                position=state['native']['time']
+                # Resuming software output can take longer than a fixed sleep.
+                # This checks eventual progress/sync, not real-time throughput.
+                state=wait(identifier,lambda s:s['native']['time']>position+1 and
+                           not s['native']['buffering'],timeout=6)['native']
                 check(str(rate)+'x-resumes-default-audio',state['time']>position+1 and abs(state['avsync'])<.1 and
                       state['audioDevice']=='auto' and state['audioOutput']=='wasapi' and
                       (not args.software or state['hwdec']=='no'),state)
@@ -144,6 +187,15 @@ def main():
             if identifier:jobs.release(identifier)
             prefetch.close();done.set()
     with patch.object(NativeSession,'forward_input',return_value=True):
+        try:
+            wait_server_started(server, server_thread)
+        except (RuntimeError, TimeoutError):
+            prefetch.close()
+            server.should_exit = True
+            server_thread.join(5)
+            listener.close()
+            host.user.DestroyWindow(hwnd)
+            raise
         client=threading.Thread(target=scenario,daemon=True);client.start()
         message=W.MSG()
         while not done.is_set():

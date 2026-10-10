@@ -29,3 +29,9 @@ pwsh -NoProfile -Command "python -I contributions/desktop-paused-preload/tests/v
 维护者发布前仍须验证真实前端轮询与 #189 灰条、快速切集/取消/退出、默认音频及三倍速，并在慢网、断网、达限时检查没有误转码。后三集缓存策略由 #187 负责，此补丁仅改变当前原生会话预读。
 
 Related to #23、#181；接入、发布并验证暂停继续预取与恢复后再考虑关闭。#202/#199/#173只关联部分路径，#151/#69仍需CPU/功耗复测。回滚用git revert本补丁，恢复约12秒预读；不要删除用户原片。完整Issue矩阵见原生播放贡献的ISSUES.md。
+
+复审补充：不论是否指定--cache-budget，都按实际preloadLimited选择达限结果；达限后继续采样3秒，允许一Range（64KiB）超调，末尾1秒必须稳定。强制软解1MiB真实复测8项通过，缓存停在1,062,668字节，2x/3x默认音频、后三集零编码和释放通过。倍速恢复按有界等待验证继续推进和A-V，不作为吞吐/CPU结论；首次固定1.2秒等待曾过早失败，已改为最多6秒等待。服务先确认监听再启动client。独立验证器4项单测覆盖默认达限、持续增长负例及启动延迟/失败/超时：
+
+```pwsh
+pwsh -NoProfile -Command "python -I contributions/desktop-paused-preload/tests/test_verifier.py"
+```
