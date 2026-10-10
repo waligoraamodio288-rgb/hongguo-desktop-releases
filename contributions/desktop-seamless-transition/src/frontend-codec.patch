@@ -1,0 +1,75 @@
+--- a/frontend/frontend-codec.js
++++ b/frontend/frontend-codec.js
+@@ -15,8 +15,8 @@
+   } catch { return false; }
+ }
+ 
+-function desktopCreateCodecFetch(forceH264 = false) {
+-  let closed = false, usedCopy = false;
++function desktopCreateCodecFetch(forceH264 = false, standbyParent = null) {
++  let closed = false, usedCopy = false, sessionId = null;
+   const pending = new Map();
+   const request = async (input, init = {}) => {
+     const url = new URL(input);
+@@ -24,9 +24,15 @@
+         !url.pathname.startsWith('/desktop/hls')) throw Error('Invalid codec endpoint');
+     if (closed && init.method !== 'DELETE') throw Error('Expired codec controller');
+     const headers = new Headers(init.headers);
++    if (standbyParent && init.method === 'POST' && url.pathname === '/desktop/hls')
++      headers.set('x-desktop-prewarm-parent', standbyParent);
+     if (!forceH264 && init.method === 'POST' && url.pathname === '/desktop/hls')
+       headers.set('x-desktop-codec-negotiation', '1');
+     const response = await fetch(input, {...init, headers});
++    if (response.ok && init.method === 'POST' && url.pathname === '/desktop/hls') {
++      const value = await response.clone().json();
++      if (/^[a-f0-9]{32}$/.test(value.id)) sessionId = value.id;
++    }
+     if (!response.ok || init.method === 'DELETE' || !/\/desktop\/hls\/[a-f0-9]{32}\/status$/.test(url.pathname))
+       return response;
+     const status = await response.clone().json();
+@@ -49,6 +55,7 @@
+     return response;
+   };
+   request.usedCopy = () => usedCopy;
++  request.sessionId = () => sessionId;
+   request.close = () => {closed = true;};
+   return request;
+ }
+@@ -66,6 +73,7 @@
+     wantedPlaying = true;
+   };
+   const onPause = () => {if (ready) wantedPlaying = false;};
++  const onRateChange = () => {rate = media.playbackRate || rate;};
+   function fallback() {
+     if (disposed || retried || !transport?.usedCopy()) return false;
+     retried = true;
+@@ -83,7 +91,7 @@
+     controller?.();
+     position = target;
+     origin = 0;
+-    transport = desktopCreateCodecFetch(force);
++    transport = desktopCreateCodecFetch(force, initialState?.standbyParent);
+     const active = () => !disposed && epoch === ownEpoch;
+     const wrapped = {...callbacks,
+       onReady() {
+@@ -128,6 +136,7 @@
+   };
+   media.addEventListener('play', onPlay);
+   media.addEventListener('pause', onPause);
++  media.addEventListener('ratechange', onRateChange);
+   media.addEventListener('error', onError, true);
+   media.addEventListener('timeupdate', rememberTime);
+   start(initialState?.forceH264 === true, position);
+@@ -138,9 +147,11 @@
+     transport?.close(); controller?.(); preparation?.dispose();
+     media.removeEventListener('play', onPlay);
+     media.removeEventListener('pause', onPause);
++    media.removeEventListener('ratechange', onRateChange);
+     media.removeEventListener('error', onError, true);
+     media.removeEventListener('timeupdate', rememberTime);
+-  }, {seek(value) {if (!disposed) {position = value; controller?.seek(value);}}});
++  }, {seek(value) {if (!disposed) {position = value; controller?.seek(value);}},
++    sessionId: () => transport?.sessionId?.()});
+ }
+ 
+ // Complete backend prefetch owns speculative media. Keep the resolved episode
