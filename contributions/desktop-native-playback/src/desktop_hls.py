@@ -103,12 +103,38 @@ def encode_hls(source, directory, on_ready=lambda: None, *, cancelled=lambda: Fa
                     writer.mux(buffered_video)
                 buffered_video = encoded
             audio = {}
+            resamplers = {}
             for stream in reader.streams.audio:
-                if stream.codec_context.name != "aac":
-                    raise ValueError("Desktop profile currently requires AAC audio")
-                audio[stream.index] = writer.add_stream_from_template(stream)
+                if stream.codec_context.name == "aac":
+                    audio[stream.index] = writer.add_stream_from_template(stream)
+                else:
+                    output = writer.add_stream("aac", rate=48000)
+                    output.layout = stream.codec_context.layout.name
+                    output.bit_rate = 128000
+                    output.codec_context.options = {"profile": "aac_low"}
+                    audio[stream.index] = output
+                    resamplers[stream.index] = av.AudioResampler(
+                        format="fltp", layout=output.layout, rate=48000)
                 audio[stream.index].codec_context.codec_tag = "mp4a"
+            def encode_audio(frame, index):
+                if cancelled():
+                    raise EncodingCancelled("Desktop encode cancelled")
+                if frame.pts is None:
+                    raise ValueError("Missing desktop audio timestamp")
+                if start_seconds:
+                    now = Fraction(frame.pts) * frame.time_base
+                    if now < window_origin:
+                        return
+                    frame.pts -= round(window_origin / frame.time_base)
+                for converted in resamplers[index].resample(frame):
+                    for encoded in audio[index].encode(converted):
+                        writer.mux(encoded)
             def push_audio(packet):
+                index = packet.stream.index
+                if index in resamplers:
+                    for frame in packet.decode():
+                        encode_audio(frame, index)
+                    return
                 if start_seconds:
                     if packet.pts is None:
                         raise ValueError("Missing desktop audio timestamp")
@@ -153,7 +179,7 @@ def encode_hls(source, directory, on_ready=lambda: None, *, cancelled=lambda: Fa
                                                                         frame.time_base.denominator))
                         for encoded in video.encode(frame):
                             push_video(encoded)
-                elif packet.stream.index in audio and packet.dts is not None:
+                elif packet.stream.index in audio and (packet.dts is not None or packet.stream.index in resamplers):
                     if window_origin is None:
                         if len(pending_audio) >= 4096:
                             raise ValueError("Desktop audio preroll exceeded")
@@ -165,6 +191,14 @@ def encode_hls(source, directory, on_ready=lambda: None, *, cancelled=lambda: Fa
                     on_ready()
             if start_seconds and window_origin is None:
                 raise ValueError("No desktop video after start position")
+            for index, resampler in resamplers.items():
+                if cancelled():
+                    raise EncodingCancelled("Desktop encode cancelled")
+                for converted in resampler.resample(None):
+                    for encoded in audio[index].encode(converted):
+                        writer.mux(encoded)
+                for encoded in audio[index].encode(None):
+                    writer.mux(encoded)
             for packet in video.encode():
                 push_video(packet)
             if buffered_video is not None:

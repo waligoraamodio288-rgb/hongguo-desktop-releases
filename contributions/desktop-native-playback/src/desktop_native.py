@@ -166,14 +166,21 @@ class NativeHost:
         if not self.available or job.cancelled.is_set():
             raise RuntimeError("Native player unavailable")
         with self.guard:
+            if job.cancelled.is_set():
+                raise RuntimeError("Native job cancelled")
             for previous in list(self.sessions.values()):
                 previous.close()
             self.sessions.clear()
             session = NativeSession(self, job, self.parent_window())
             self.sessions[job.id] = session
-            session.thread.start()
-            if job.cancelled.is_set():
+            try:
+                session.thread.start()
+                if job.cancelled.is_set():
+                    raise RuntimeError("Native job cancelled")
+            except BaseException:
+                self.sessions.pop(job.id, None)
                 session.close()
+                raise
 
     def snapshot(self, identifier):
         with self.guard:

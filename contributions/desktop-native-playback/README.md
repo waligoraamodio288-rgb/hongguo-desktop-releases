@@ -27,7 +27,7 @@ pwsh -NoProfile -Command "python -I contributions/desktop-native-playback/tests/
 pwsh -NoProfile -Command "node contributions/desktop-native-playback/tests/test_frontend.cjs"
 ```
 
-27项Python用例全部在本机通过：默认公开运行18项通过、1项本地HEVC输入测试跳过；另提供 `DESKTOP_HEVC_TEST_SOURCE` 后该用例也通过。Node覆盖轨道协商、位置/暂停/倍速恢复、只回退一次、旧回执与源失败不误转码。公开fixture是合成媒体及公开测试密钥，不含提供方视频。硬解失败由受控驱动测试，未人为破坏真实GPU。
+当前公开测试共31项：本轮30项通过、1项可选本地HEVC输入测试跳过。Node覆盖轨道协商、位置/暂停/倍速恢复、只回退一次、旧回执与源失败不误转码。新增真实合成Opus输入转AAC-LC、seek共同时间原点、取消和预算回归；已有AAC继续直拷。新增两个确定性取消竞争测试，防止DELETE后prepare注册残留会话。公开fixture是合成媒体及公开测试密钥，不含提供方视频。硬解失败由受控驱动测试，未人为破坏真实GPU。
 
 先前实际Tauri/WebView2已验证本机硬解dxva2-copy、强制软解、2x/3x、默认音频、首帧早于整片下载、缓冲恢复、暂停seek、切集、EOF连播及一次H.264回退。真实CENC输入的解码帧与已有明文一致。以上是本机接线结果；公开模块测试不能代替维护者私有源码与真实窗口验收。A-V数字来自内核时钟，没有物理声画、跨设备CPU/温度/功耗结论。
 

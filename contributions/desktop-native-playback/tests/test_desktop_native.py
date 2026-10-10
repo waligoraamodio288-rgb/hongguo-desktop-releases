@@ -55,6 +55,27 @@ class NativeTests(unittest.TestCase):
         path.write_bytes(b'not executable')
         self.assertFalse(NativeHost(dll_path=path).available)
 
+    def test_cancel_before_prepare_lock_cannot_leave_registered_session(self):
+        host=NativeHost(dll_path=self.root/'missing.dll');host.available=True
+        job=SimpleNamespace(id='cancel-race',cancelled=threading.Event())
+        class CancelAtLock:
+            def __enter__(self):job.cancelled.set()
+            def __exit__(self,*args):pass
+        host.guard=CancelAtLock()
+        with patch('desktop_native.NativeSession') as session:
+            with self.assertRaises(RuntimeError):host.prepare(job)
+            session.assert_not_called()
+        self.assertEqual(host.sessions,{})
+
+    def test_cancel_at_thread_start_removes_inserted_session(self):
+        host=NativeHost(dll_path=self.root/'missing.dll');host.available=True
+        job=SimpleNamespace(id='cancel-start',cancelled=threading.Event())
+        with patch.object(host,'parent_window',return_value=1), patch('desktop_native.NativeSession') as factory:
+            session=factory.return_value;session.thread.start.side_effect=job.cancelled.set
+            with self.assertRaises(RuntimeError):host.prepare(job)
+            session.close.assert_called_once()
+        self.assertEqual(host.sessions,{})
+
     def test_native_protocol_auth_no_transcode_and_cleanup(self):
         class Host:
             available = True
