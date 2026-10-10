@@ -370,6 +370,17 @@ class PlayableCacheTests(unittest.TestCase):
                 self.cache.restore(self.source, replay)
         self.assertFalse(replay.exists())
 
+    def test_store_rejects_playlist_without_initial_hls_header(self):
+        playlist = self.output / "index.m3u8"
+        valid = playlist.read_text(encoding="utf-8")
+        for text in (valid.removeprefix("#EXTM3U\n"), "\n" + valid,
+                     valid.replace("#EXTM3U", "#EXTM3U8", 1)):
+            with self.subTest(playlist=text):
+                playlist.write_text(text, encoding="utf-8")
+                with self.assertRaises(ValueError):
+                    self.cache.store(self.source, self.output)
+                self.assertFalse(self.cache.contains(self.source))
+
     def test_cancelled_commit_is_not_visible_and_stage_is_removed(self):
         with self.assertRaises(EncodingCancelled):
             self.cache.store(self.source, self.output, cancelled=lambda: True)

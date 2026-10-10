@@ -71,9 +71,12 @@ class PlayableEpisodeCache:
         if not plain(marker) or not plain(index) or marker.read_text(encoding="ascii") != "desktop-hls-v1\n":
             raise ValueError("Artifact completion is unavailable")
         text = index.read_text(encoding="utf-8")
+        lines = text.splitlines()
+        if not lines or lines[0] != "#EXTM3U":
+            raise ValueError("Artifact playlist header is invalid")
         if "#EXT-X-ENDLIST" not in text or '#EXT-X-MAP:URI="init.mp4"' not in text:
             raise ValueError("Artifact playlist is incomplete")
-        segments = [line for line in text.splitlines() if line and not line.startswith("#")]
+        segments = [line for line in lines if line and not line.startswith("#")]
         if not segments or len(set(segments)) != len(segments) or any(
                 not re.fullmatch(r"seg[0-9]{6}\.m4s", name) for name in segments):
             raise ValueError("Invalid artifact segment names")
