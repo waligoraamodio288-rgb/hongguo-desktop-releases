@@ -1,14 +1,35 @@
 --- a/frontend/frontend-native.js
 +++ b/frontend/frontend-native.js
-@@ -11,6 +11,7 @@
+@@ -11,13 +11,23 @@
      rate: media.playbackRate || 1, volume: media.volume, muted: media.muted, width: 0, height: 0,
      seeking: false, buffering: false, bufferStart: 0, bufferEnd: 0};
    const headers = {'x-api-key': endpoint.key};
 +  media.desktopSessionId = () => id || delegated?.sessionId?.();
    const options = {credentials: 'omit', redirect: 'error', cache: 'no-store'};
    const event = name => {if (!disposed && native) media.dispatchEvent(new Event(name));};
-   async function request(path, init = {}) {
-@@ -36,7 +37,7 @@
+-  async function request(path, init = {}) {
+-    const response = await fetch(endpoint.origin + '/desktop/hls' + path,
+-      {...options, ...init, headers: {...headers, ...init.headers}});
+-    if (!response.ok) throw Error('Desktop native session unavailable');
+-    return response.status === 204 ? null : response.json();
++  async function request(path, init = {}, timeoutMs = 15000) {
++    const abort = new AbortController();
++    let timeout;
++    try {
++      return await Promise.race([
++        (async () => {
++          const response = await fetch(endpoint.origin + '/desktop/hls' + path,
++            {...options,...init,signal:abort.signal,headers:{...headers,...init.headers}});
++          if (!response.ok) throw Error('Desktop native session unavailable');
++          return response.status === 204 ? null : response.json();
++        })(),
++        new Promise((_,reject)=>{timeout=setTimeout(()=>{abort.abort();reject(Error('Desktop request timed out'));},Math.max(1,timeoutMs));})
++      ]);
++    } finally {clearTimeout(timeout);}
+   }
+   async function release(identifier) {
+     if (!identifier) return;
+@@ -36,7 +46,7 @@
        if (descriptor) Object.defineProperty(media, key, descriptor);
        else delete media[key];
      }
@@ -17,7 +38,7 @@
      media.playbackRate = state.rate;
      media.volume = state.volume;
      media.muted = state.muted;
-@@ -53,7 +54,7 @@
+@@ -53,7 +63,7 @@
      // Stop the native audio before the HLS element is allowed to autoplay.
      await release(old);
      if (disposed) return;
@@ -26,7 +47,7 @@
        forceH264 ? null : preparation, windowed, {forceH264, paused: state.paused});
    }
    async function failPreparation() {
-@@ -62,7 +63,7 @@
+@@ -62,7 +72,7 @@
      const old = id; id = null;
      restore();
      await release(old);
@@ -35,7 +56,7 @@
    }
    function queue(command) {
      if (disposed || !native || fallbackStarted) return;
-@@ -109,13 +110,13 @@
+@@ -110,13 +120,13 @@
      // is downloading. Capture it immediately before replacing the properties.
      state.rate = media.playbackRate || state.rate;
      state.volume = media.volume; state.muted = media.muted;
@@ -51,7 +72,7 @@
      property('readyState', {get: () => ready ? 4 : 0});
      property('currentTime', {get: () => state.time, set: seek});
      property('buffered', {get: () => ({length: state.bufferEnd > state.bufferStart ? 1 : 0,
-@@ -202,20 +203,27 @@
+@@ -203,20 +213,31 @@
      } catch {if (!disposed && ownGeneration === generation) failPreparation();}
      finally {
        pollBusy = false;
@@ -64,7 +85,11 @@
 +      const standby = await preparation?.claimRecord?.(url, initialPosition);
 +      if (disposed) {standby?.dispose(); return;}
 +      if (standby?.mode !== 'native' && standby?.adopt) {
-+        delegated = standby.adopt(media, callbacks);
++        delegated = standby.adopt(media, callbacks, () => {
++          delegated = null;
++          preparation?.cancelClaim?.();
++          delegate(false);
++        });
 +        return;
 +      }
 +      if (standby?.settings) { media.playbackRate = standby.settings.rate; media.volume = standby.settings.volume; media.muted = standby.settings.muted; }
@@ -83,7 +108,7 @@
        if (!/^[a-f0-9]{32}$/.test(identifier)) throw Error('Invalid native session');
        if (disposed) {await release(identifier); return;}
        id = identifier;
-@@ -236,12 +244,32 @@
+@@ -237,12 +258,34 @@
        if (disposed) return;
        preparation?.dispose();
        patch(); poll(generation);
@@ -95,11 +120,13 @@
 +        clearTimeout(controlTimer); controlTimer = null;
 +        await flush();
 +        const untilVisible = Date.now() + 2000;
++        let confirmed = false;
 +        while (!disposed && Date.now() < untilVisible) {
-+          const shown = (await request('/' + id + '/status')).native;
-+          if (shown?.visible && shown.outputReady && shown.revision >= revision) { preparation?.finishRetained?.(); break; }
++          const shown = (await request('/' + id + '/status', {}, untilVisible-Date.now())).native;
++          if (shown?.visible && shown.outputReady && shown.revision >= revision) { await request('/' + id + '/activate', {method:'POST'}, untilVisible-Date.now()); confirmed = true; preparation?.finishRetained?.(); break; }
 +          await new Promise(resolve => setTimeout(resolve, 20));
 +        }
++        if (!disposed && !confirmed) throw Error('Standby activation timed out');
 +      }
      } catch {if (!disposed) failPreparation();}
    })();

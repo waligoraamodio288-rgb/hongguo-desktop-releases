@@ -43,11 +43,31 @@ function desktopPrepareNext(url, currentMedia) {
   const headers = {'x-api-key': endpoint.key};
   const options = {credentials: 'omit', redirect: 'error', cache: 'no-store'};
   const abort = new AbortController();
-  async function request(path, init = {}) {
-    const response = await fetch(endpoint.origin + '/desktop/hls' + path,
-      {...options, signal: abort.signal, ...init, headers: {...headers, ...init.headers}});
-    if (!response.ok) throw Error('Standby unavailable');
-    return response.status === 204 ? null : response.json();
+  const deadline = Date.now() + 90000;
+  async function fetchJson(url, init = {}) {
+    const remaining = Math.min(15000, deadline - Date.now());
+    if (disposed || remaining <= 0) throw Error('Standby request expired');
+    const local = new AbortController();
+    let timer, cancel;
+    try {
+      return await Promise.race([
+        (async () => {
+          const response = await fetch(url, {...options, ...init, signal:local.signal,
+            headers:{...headers,...init.headers}});
+          if (!response.ok) throw Error('Standby unavailable');
+          return response.status === 204 ? null : response.json();
+        })(),
+        new Promise((_, reject) => {
+          cancel = () => {local.abort();reject(Error('Standby request cancelled'));};
+          abort.signal.addEventListener('abort',cancel,{once:true});
+          timer = setTimeout(cancel,remaining);
+          if (abort.signal.aborted) cancel();
+        })
+      ]);
+    } finally {clearTimeout(timer);abort.signal.removeEventListener('abort',cancel);}
+  }
+  function request(path, init = {}) {
+    return fetchJson(endpoint.origin + '/desktop/hls' + path, init);
   }
   async function release() {
     if (!id) return;
@@ -94,14 +114,12 @@ function desktopPrepareNext(url, currentMedia) {
     try {
       const capability = await request('/capabilities');
       if (capability.standbyPlayback !== 1 || disposed) return null;
-      const created = await fetch(endpoint.url, {...options, signal:abort.signal, method:'POST',
-        headers:{...headers,'x-desktop-codec-negotiation':'1','x-desktop-prewarm-parent':parent}});
-      if (!created.ok) throw Error('Standby preparation failed');
-      const identifier = (await created.json()).id;
+      const created = await fetchJson(endpoint.url, {method:'POST',
+        headers:{'x-desktop-codec-negotiation':'1','x-desktop-prewarm-parent':parent}});
+      const identifier = created.id;
       if (!/^[a-f0-9]{32}$/.test(identifier)) throw Error('Invalid standby');
       id = identifier;
       if (disposed) {release(); return null;}
-      const deadline = Date.now() + 90000;
       let value;
       while (!disposed && Date.now() < deadline) {
         value = await request('/' + id + '/status');
@@ -144,7 +162,7 @@ function desktopPrepareNext(url, currentMedia) {
       }
       if (disposed || failed || video.readyState < 2) throw Error('Standby video timed out');
       id = controller.sessionId?.() || id;
-      return {id, mode, dispose:cleanup, adopt(media, handlers) {
+      return {id, mode, dispose:cleanup, adopt(media, handlers, onFailure) {
         if (disposed) return null;
         const saved = new Map(), listeners = [];
         let closed = false;
@@ -158,8 +176,8 @@ function desktopPrepareNext(url, currentMedia) {
         for (const name of ['paused','ended','duration','readyState','videoWidth','videoHeight','buffered','seeking','error'])
           property(name,{get:()=>video[name]});
         property('play',{value:()=>video.play()}); property('pause',{value:()=>video.pause()});
-        media.desktopDisplayMedia = video;
-        media.desktopSessionId = () => id;
+        property('desktopDisplayMedia',{value:video});
+        property('desktopSessionId',{value:()=>id});
         for (const name of ['play','playing','pause','ended','timeupdate','waiting','seeking','seeked','progress','volumechange','ratechange','error','loadedmetadata','durationchange']) {
           const forward=()=>{if(!closed)media.dispatchEvent(new Event(name));};
           video.addEventListener(name,forward);listeners.push([name,forward]);
@@ -170,6 +188,13 @@ function desktopPrepareNext(url, currentMedia) {
         for (const name of ['onTimeline','onPlayableRange','onComplete','onWindowOrigin','onReady'])
           if (known[name]) handlers[name]?.(...known[name]);
         media.dispatchEvent(new Event('loadedmetadata'));media.dispatchEvent(new Event('durationchange'));
+        const restoreAdoption = () => {
+          if (closed) return false;
+          closed=true;consumer=null;
+          for(const [name,fn] of listeners)video.removeEventListener(name,fn);
+          for(const [name,descriptor] of saved){if(descriptor)Object.defineProperty(media,name,descriptor);else delete media[name];}
+          return true;
+        };
         request('/'+id+'/activate',{method:'POST'}).then(() => {
           if (disposed) return;
           return video.play();
@@ -177,12 +202,13 @@ function desktopPrepareNext(url, currentMedia) {
           if (disposed) return;
           if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(finishRetained);
           else requestAnimationFrame(finishRetained);
-        }).catch(()=>{cleanup();handlers.onError?.();});
+        }).catch(()=>{
+          if (closed || disposed) return;
+          restoreAdoption();cleanup();
+          if (onFailure) onFailure(); else handlers.onError?.();
+        });
         return Object.assign(() => {
-          if(closed)return;closed=true;consumer=null;
-          for(const [name,fn] of listeners)video.removeEventListener(name,fn);
-          for(const [name,descriptor] of saved){if(descriptor)Object.defineProperty(media,name,descriptor);else delete media[name];}
-          delete media.desktopDisplayMedia;delete media.desktopSessionId;cleanup();
+          if(restoreAdoption())cleanup();
         },{seek:value=>controller?.seek(value),sessionId:()=>id});
       }};
     } catch {

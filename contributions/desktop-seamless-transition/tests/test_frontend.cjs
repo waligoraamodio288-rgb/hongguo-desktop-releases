@@ -11,7 +11,7 @@ class Video extends EventTarget {
   closest(){return this.stage;}
   getBoundingClientRect(){return {left:10,top:10,width:800,height:500};}
 }
-async function scenario(native,fail=false){
+async function scenario(native,fail=false,fault=null){
   const calls=[],children=[],timers=new Set();let selected=false,revision=0,released=0,stopped=0,started=0;
   let confirmActivation;
   const activated=new Promise(resolve=>confirmActivation=resolve);
@@ -20,7 +20,7 @@ async function scenario(native,fail=false){
   const endpoint={origin:'http://127.0.0.1:23456',url:'http://127.0.0.1:23456/desktop/hls?series_id=1234567890123456&ep=2',key:'b'.repeat(64)};
   const context={URL,Event,Number,Math,Date,WeakMap,Proxy,Map,AbortController,window:{devicePixelRatio:1},
     w0:()=>endpoint,ik(){},desktopSupportsSource:async()=>true,
-    setTimeout(fn,ms){if(ms>=15000)return 999;const id=setTimeout(fn,1);timers.add(id);return id;},
+    setTimeout(fn,ms){if(ms>=15000&&!fault?.startsWith('hung'))return 999;const id=setTimeout(fn,1);timers.add(id);return id;},
     clearTimeout:id=>{timers.delete(id);clearTimeout(id);},requestAnimationFrame:fn=>queueMicrotask(fn),
     document:{createElement:()=>new Video()},
     desktopCodecHls(video,url,start,callbacks,prep,windowed,state){
@@ -32,7 +32,8 @@ async function scenario(native,fail=false){
     fetch:async(url,init={})=>{
       url=String(url);calls.push({url,...init});let body={};
       if(init.method==='DELETE'){released++;return {ok:true,status:204};}
-      if(url.endsWith('/activate'))await activated;
+      if(url.endsWith('/activate')){await activated;if(fault==='activate')throw Error('activation rejected');}
+      if(url.endsWith('/status')&&fault==='hung-status')return new Promise(()=>{});
       if(url.endsWith('/capabilities'))body={standbyPlayback:1,nativePlayback:native?1:0};
       else if(url.endsWith('/mode')){selected=true;body=JSON.parse(init.body);}
       else if(url.endsWith('/control')){revision++;body={revision};}
@@ -40,7 +41,7 @@ async function scenario(native,fail=false){
       else if(url.endsWith('/status'))body=fail?{state:'failed'}:{state:'complete',
         source:{copyEligible:true,video:{contentType:'video/mp4; codecs="hvc1.1.6.L120.B0"'},audio:[]},
         native:selected?{outputReady:true,revision}:null};
-      return {ok:true,status:200,json:async()=>body};
+      return {ok:true,status:200,json:async()=>url.endsWith('/status')&&fault==='hung-json'?new Promise(()=>{}):body};
     }};
   vm.createContext(context);vm.runInContext(source,context);
   assert.equal(context.desktopShouldPrewarm({duration:100,currentTime:70,playbackRate:1,readyState:4}),false);
@@ -50,7 +51,7 @@ async function scenario(native,fail=false){
   assert.equal(context.desktopShouldPrewarm({duration:10,desktopTimelineDuration:90,desktopTimeOrigin:80,currentTime:2,playbackRate:1,readyState:4}),true);
   const prep=context.desktopPrepareNext(endpoint.url,current);
   const record=await prep.claimRecord(endpoint.url,0);
-  if(fail){assert.equal(record,null);await tick();assert.equal(released,1);return;}
+  if(fail||fault?.startsWith('hung')){assert.equal(record,null);await tick();assert.equal(released,1);for(const timer of timers)clearTimeout(timer);return;}
   assert(record);assert.equal(record.settings.volume,.3);assert.equal(record.settings.rate,3);
   const create=calls.find(c=>c.headers?.['x-desktop-prewarm-parent']);
   assert(create);assert.equal(create.headers['x-desktop-prewarm-parent'],'a'.repeat(32));
@@ -60,22 +61,36 @@ async function scenario(native,fail=false){
     assert(command.paused&&command.muted&&!command.visible);assert.equal(command.rate,3);
     record.dispose();await tick();assert.equal(released,1);
   }else{
-    const media=new Video();media.stage=current.stage;let ended=0;
+    const media=new Video();media.stage=current.stage;let ended=0,errors=0,fallbacks=0;
+    if(fault==='play')children[0].play=()=>Promise.reject(Error('play rejected'));
     media.addEventListener('ended',()=>ended++);
     prep.retain(()=>started++);
     let timeline;
-    const dispose=record.adopt(media,{onReady:()=>started++,onComplete:v=>assert(v),onTimeline:d=>timeline=d});
+    const dispose=record.adopt(media,{onReady:()=>started++,onError:()=>errors++,onComplete:v=>assert(v),onTimeline:d=>timeline=d},()=>{
+      fallbacks++;assert.equal(media.currentTime,0);assert.equal(media.play,Video.prototype.play);
+      assert(children[0].removed);assert.equal(media.desktopSessionId,undefined);
+    });
     assert.equal(timeline,90);
     assert.equal(media.volume,.3);assert.equal(media.playbackRate,3);assert.equal(media.paused,true);
     assert.equal(children[0].currentTime,0);assert.equal(children[0].style.opacity,'1');
     children[0].dispatchEvent(new Event('ended'));assert.equal(ended,1);
     dispose.seek(7);assert.equal(media.currentTime,7);
     await tick();assert.equal(media.paused,true);assert.equal(started,1,'retain old picture until activation is acknowledged');
+    if(fault){
+      if(fault==='cancel')dispose();
+      confirmActivation();await tick();
+      assert.equal(errors,0);assert.equal(fallbacks,fault==='cancel'?0:1);
+      assert.equal(stopped,1);assert.equal(released,1);assert(children[0].removed);
+      const before=ended;children[0].dispatchEvent(new Event('ended'));assert.equal(ended,before);
+      dispose();for(const timer of timers)clearTimeout(timer);return;
+    }
     confirmActivation();await tick();assert.equal(media.paused,false);assert(started>=2);dispose();await tick();assert.equal(stopped,1);assert.equal(released,1);
     assert(children[0].removed);assert(!Object.hasOwn(media,'currentTime')||media.currentTime===0);
   }
   for(const timer of timers)clearTimeout(timer);
 }
 (async()=>{await scenario(true);await scenario(false);await scenario(true,true);await scenario(false,true);
+  for(const fault of ['activate','play','cancel','hung-status','hung-json'])await scenario(false,false,fault);
+  console.log('PASS: activation/play rollback and normal fallback, stale cancel suppression, bounded hanging fetch/JSON');
   console.log('PASS: cold-source request, speed threshold, hidden/muted first frame, ownership, HLS bridge, controls, failure and release');
 })().catch(error=>{console.error(error);process.exitCode=1});

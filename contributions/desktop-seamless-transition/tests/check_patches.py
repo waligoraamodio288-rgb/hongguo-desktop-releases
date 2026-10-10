@@ -18,6 +18,12 @@ with tempfile.TemporaryDirectory() as temp:
     (root/'src').mkdir();(root/'tests').mkdir()
     for file in frontend.glob('*.js'):shutil.copyfile(file,root/'src'/file.name)
     for file in (a.native_package/'tests').glob('*.cjs'):shutil.copyfile(file,root/'tests'/file.name)
+    fixture=root/'tests/test_frontend.cjs'
+    text=fixture.read_text(encoding='utf-8')
+    # The base harness predates bounded requests; provide the browser API.
+    assert text.count('const nc={')==1
+    fixture.write_text(text.replace('const nc={','const nc={AbortController,'),encoding='utf-8')
     subprocess.run(['node',str(root/'tests/test_frontend.cjs')],check=True)
     subprocess.run(['node',str(package/'tests/test_frontend.cjs')],check=True)
+    subprocess.run(['node',str(package/'tests/test_activation.cjs'),str(root/'src/frontend-native.js')],check=True)
 print('PASS: exact public bridge patches, syntax and frontend regressions')
