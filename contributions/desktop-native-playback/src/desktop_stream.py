@@ -9,6 +9,9 @@ import hashlib
 import io
 import re
 import threading
+import time
+
+import requests
 from urllib.parse import urlsplit
 
 
@@ -73,34 +76,30 @@ class ProgressiveSource:
             headers = {"Range": f"bytes={start}-{end}", "Accept-Encoding": "identity"}
             if self.validator:
                 headers["If-Range"] = self.validator
-            response = None
             try:
                 self.reading.set()
-                response = self._request("GET", self._url, headers=headers,
-                                         stream=True, timeout=(3, 3))
-                match = re.fullmatch(r"bytes ([0-9]+)-([0-9]+)/([0-9]+)",
-                                     response.headers.get("Content-Range", ""))
-                if response.status_code != 206 or not match:
-                    raise SourceReadError("Provider does not support byte ranges")
-                first, last, total = map(int, match.groups())
-                if (first != start or last != min(end, total - 1)
-                        or not 0 < total <= 2 * 1024 ** 3 or self.size and self.size != total):
-                    raise SourceReadError("Invalid provider byte range")
-                validator = response.headers.get("ETag") or response.headers.get("Last-Modified")
-                if self.validator and validator != self.validator:
-                    raise SourceReadError("Provider media changed")
-                data = bytearray()
-                for chunk in response.iter_content(16384):
+                for attempt in range(3):
                     if cancelled():
                         raise InterruptedError("Media read cancelled")
-                    data.extend(chunk)
-                    if len(data) > last - first + 1:
-                        raise SourceReadError("Provider range exceeded its bounds")
-                if len(data) != last - first + 1:
-                    raise SourceReadError("Incomplete provider byte range")
+                    try:
+                        value, total, validator = self._range(start, end, headers, cancelled)
+                        break
+                    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
+                        if cancelled():
+                            raise InterruptedError("Media read cancelled")
+                        if attempt == 2:
+                            raise
+                        # Keep the player in its cache/buffering path. Do not
+                        # poison the source for a recoverable transport stall.
+                        until = time.monotonic() + .25
+                        while time.monotonic() < until:
+                            if cancelled():
+                                raise InterruptedError("Media read cancelled")
+                            time.sleep(.025)
+                if cancelled():
+                    raise InterruptedError("Media read cancelled")
                 with self.guard:
                     self.size, self.validator = total, validator
-                    value = bytes(data)
                     self.blocks[index] = value
                     if index not in self.seen:
                         self.seen.add(index)
@@ -115,8 +114,36 @@ class ProgressiveSource:
                 raise SourceReadError("Media range read failed") from None
             finally:
                 self.reading.clear()
-                if response is not None:
-                    response.close()
+
+    def _range(self, start, end, headers, cancelled):
+        response = None
+        try:
+            response = self._request("GET", self._url, headers=headers,
+                                     stream=True, timeout=(3, 10))
+            match = re.fullmatch(r"bytes ([0-9]+)-([0-9]+)/([0-9]+)",
+                                 response.headers.get("Content-Range", ""))
+            if response.status_code != 206 or not match:
+                raise SourceReadError("Provider does not support byte ranges")
+            first, last, total = map(int, match.groups())
+            if (first != start or last != min(end, total - 1)
+                    or not 0 < total <= 2 * 1024 ** 3 or self.size and self.size != total):
+                raise SourceReadError("Invalid provider byte range")
+            validator = response.headers.get("ETag") or response.headers.get("Last-Modified")
+            if self.validator and validator != self.validator:
+                raise SourceReadError("Provider media changed")
+            data = bytearray()
+            for chunk in response.iter_content(16384):
+                if cancelled():
+                    raise InterruptedError("Media read cancelled")
+                data.extend(chunk)
+                if len(data) > last - first + 1:
+                    raise SourceReadError("Provider range exceeded its bounds")
+            if len(data) != last - first + 1:
+                raise SourceReadError("Incomplete provider byte range")
+            return bytes(data), total, validator
+        finally:
+            if response is not None:
+                response.close()
 
     def reader(self, cancelled=lambda: False):
         return RangeReader(self, cancelled)

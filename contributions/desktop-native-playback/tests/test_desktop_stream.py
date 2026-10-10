@@ -10,6 +10,10 @@ import socket
 import time
 import urllib.request
 import urllib.error
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from unittest.mock import patch
+
+import requests
 
 import av
 from desktop_stream import ProgressiveSource, SourceReadError, open_media
@@ -46,6 +50,79 @@ def source_for(data, **kwargs):
 
 
 class StreamTests(unittest.TestCase):
+
+    def test_real_http_stall_over_old_three_second_timeout(self):
+        payload = b'x' * 65536
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, *args): pass
+            def do_GET(self):
+                self.send_response(206)
+                self.send_header('Content-Range', 'bytes 0-65535/65536')
+                self.send_header('Content-Length', str(len(payload)))
+                self.send_header('ETag', '"owned"')
+                self.end_headers()
+                time.sleep(3.2)
+                self.wfile.write(payload)
+        server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        worker = threading.Thread(target=server.serve_forever, daemon=True)
+        worker.start()
+        try:
+            source = ProgressiveSource('http://127.0.0.1:'+str(server.server_port)+'/owned',
+                                       request=requests.request, identity='owned')
+            self.assertEqual(source.reader().read(10), payload[:10])
+            self.assertFalse(source.network_failed.is_set())
+        finally:
+            server.shutdown()
+            worker.join(3)
+            server.server_close()
+
+    def test_stream_connection_error_closes_response_before_full_range_retry(self):
+        source, _ = source_for(b'x' * 200000)
+        first = Response(b'x' * 200000, 0, 65535)
+        second = Response(b'x' * 200000, 0, 65535)
+        def interrupted_stream(_):
+            yield b'x' * 16384
+            raise requests.exceptions.ConnectionError('private-url')
+        first.iter_content = interrupted_stream
+        with patch.object(source, '_request', side_effect=[first, second]):
+            self.assertEqual(source.reader().read(10), b'x' * 10)
+        self.assertTrue(first.closed and second.closed)
+        self.assertEqual(source.snapshot()['receivedBytes'], 65536)
+        self.assertFalse(source.network_failed.is_set())
+
+    def test_transient_timeout_recovers_without_poisoning_source(self):
+        good, calls = source_for(b'x' * 200000)
+        attempts = []
+        def request(*args, **kwargs):
+            attempts.append(kwargs['timeout'])
+            if len(attempts) == 1:
+                raise requests.exceptions.ReadTimeout('private-url')
+            return Response(b'x' * 200000, 0, 65535)
+        good._request = request
+        self.assertEqual(good.reader().read(10), b'x' * 10)
+        self.assertEqual(attempts, [(3, 10), (3, 10)])
+        self.assertFalse(good.network_failed.is_set())
+
+    def test_persistent_timeout_is_bounded_and_sanitized(self):
+        source, _ = source_for(b'x' * 200000)
+        with patch.object(source, '_request', side_effect=requests.exceptions.ReadTimeout('private-url')) as request:
+            with self.assertRaises(SourceReadError) as error:
+                source.reader().read(10)
+        self.assertEqual(request.call_count, 3)
+        self.assertTrue(source.network_failed.is_set())
+        self.assertNotIn('private-url', str(error.exception))
+
+    def test_cancel_during_retry_does_not_issue_another_request(self):
+        source, _ = source_for(b'x' * 200000)
+        stopped = threading.Event()
+        def request(*args, **kwargs):
+            stopped.set()
+            raise requests.exceptions.ReadTimeout()
+        with patch.object(source, '_request', side_effect=request) as request:
+            with self.assertRaises(InterruptedError):
+                source.reader(stopped.is_set).read(10)
+        self.assertEqual(request.call_count, 1)
+        self.assertFalse(source.network_failed.is_set())
 
     def test_authenticated_http_ranges_head_invalid_and_release(self):
         from fastapi import FastAPI

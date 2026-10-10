@@ -27,10 +27,12 @@ pwsh -NoProfile -Command "python -I contributions/desktop-native-playback/tests/
 pwsh -NoProfile -Command "node contributions/desktop-native-playback/tests/test_frontend.cjs"
 ```
 
-19项Python用例全部在本机通过：默认公开运行18项通过、1项本地HEVC输入测试跳过；另提供 `DESKTOP_HEVC_TEST_SOURCE` 后该用例也通过。Node覆盖轨道协商、位置/暂停/倍速恢复、只回退一次、旧回执与源失败不误转码。公开fixture是合成媒体及公开测试密钥，不含提供方视频。硬解失败由受控驱动测试，未人为破坏真实GPU。
+27项Python用例全部在本机通过：默认公开运行18项通过、1项本地HEVC输入测试跳过；另提供 `DESKTOP_HEVC_TEST_SOURCE` 后该用例也通过。Node覆盖轨道协商、位置/暂停/倍速恢复、只回退一次、旧回执与源失败不误转码。公开fixture是合成媒体及公开测试密钥，不含提供方视频。硬解失败由受控驱动测试，未人为破坏真实GPU。
 
 先前实际Tauri/WebView2已验证本机硬解dxva2-copy、强制软解、2x/3x、默认音频、首帧早于整片下载、缓冲恢复、暂停seek、切集、EOF连播及一次H.264回退。真实CENC输入的解码帧与已有明文一致。以上是本机接线结果；公开模块测试不能代替维护者私有源码与真实窗口验收。A-V数字来自内核时钟，没有物理声画、跨设备CPU/温度/功耗结论。
 
 `src/libmpv-source.json` 记录测试用DLL的第三方来源；DLL不随本PR分发。当前适配固定SHA256 `34780746a0273a4fcae42dfe262a28984a426a238939474afd3a1561b450bbef`。维护者应核验来源及匹配API，按实际mpv/FFmpeg构建履行第三方许可与对应源码义务；升级后重新验收，不能仅改摘要绕过核验。[mpv手册](https://mpv.io/manual/stable/)说明解码与缓存选项。
 
 [Issue对应关系与关闭条件](ISSUES.md)。回滚时在私有源码revert播放接线和新增模块，恢复原HLS入口；保留用户原片与观看记录，不直接删除未知缓存。材料提交、应用接入、发布与Issue验收分别记录。
+
+复审修复：max_jobs限制总会话数；max_workers只限制copy/H.264实际编码，native准备不占编码槽。HlsJobs在有会话时自行启动回收线程，无后续请求也按idle_seconds清理，宿主shutdown调用jobs.close()。Range连接超时3秒、无数据读超时10秒，Timeout/ConnectionError最多尝试3次；每次重新校验Range/validator并丢弃失败的部分块，取消在读取和退避间检查。协议错误不重试；重试耗尽才报告source-read。[Requests超时说明](https://requests.readthedocs.io/en/stable/user/advanced/#timeouts)。新增真实3.2秒HTTP停顿恢复、重试关闭响应、取消、编码并发和无请求到期回归。

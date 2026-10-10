@@ -61,6 +61,35 @@ class HlsJobs:
         self.full_cache_ready = full_cache_ready
         self.negotiation_seconds = negotiation_seconds
         self.native = native
+        self.encoder_slots = threading.BoundedSemaphore(max_workers)
+        self.closed = threading.Event()
+        self.reaper = None
+
+    def _reap(self):
+        while not self.closed.wait(min(1.0, max(.05, self.idle_seconds / 4))):
+            with self.guard:
+                expired = [job.id for job in self.jobs.values()
+                           if time.monotonic() - job.touched > self.idle_seconds]
+            for identifier in expired:
+                # Recheck under the lock: a status poll may have renewed it.
+                with self.guard:
+                    job = self.jobs.get(identifier)
+                    if job and time.monotonic() - job.touched > self.idle_seconds:
+                        self.release(identifier)
+            with self.guard:
+                if not self.jobs:
+                    self.reaper = None
+                    return
+
+    def close(self):
+        self.closed.set()
+        with self.guard:
+            remaining = list(self.jobs.values())
+        for job in remaining:
+            self.release(job.id)
+        reaper = self.reaper
+        if reaper and reaper is not threading.current_thread():
+            reaper.join(5)
 
     def _remove_output(self, job):
         # Only our generated UUID child; never a source file or a caller's path.
@@ -85,15 +114,19 @@ class HlsJobs:
             raise HTTPException(400, "Invalid desktop start position")
         with self.guard:
             self._expire()
-            active = sum(not job.done.is_set() for job in self.jobs.values())
-            if len(self.jobs) >= self.max_jobs or active >= self.max_workers:
-                raise HTTPException(503, "Desktop encoder is busy; retry shortly")
+            if self.closed.is_set():
+                raise HTTPException(503, "Desktop sessions are closed")
+            if len(self.jobs) >= self.max_jobs:
+                raise HTTPException(503, "Desktop session limit reached; retry shortly")
             identifier = uuid.uuid4().hex
             job = Job(identifier, self.root / identifier,
                       start_seconds=float(start_seconds), window_origin=None if start_seconds else 0.0,
                       negotiate_codec=negotiate_codec)
             self.jobs[identifier] = job
             try:
+                if self.reaper is None:
+                    self.reaper = threading.Thread(target=self._reap, daemon=True)
+                    self.reaper.start()
                 if self.on_start:
                     self.on_start(job, series_id, episode)
                 threading.Thread(target=self._run, args=(job, series_id, episode), daemon=True).start()
@@ -110,6 +143,7 @@ class HlsJobs:
 
     def _run(self, job, series_id, episode):
         source = None
+        encoder_acquired = False
         try:
             source = self.source_loader(series_id, episode)
             job.source = source if isinstance(source, ProgressiveSource) else Path(source)
@@ -139,6 +173,12 @@ class HlsJobs:
                 return
             # This gate owns encoding, not source downloads or native playback.
             # A cached native episode must not wait for an HLS worker to unwind.
+            while not job.cancelled.is_set():
+                if self.encoder_slots.acquire(timeout=.1):
+                    encoder_acquired = True
+                    break
+            if job.cancelled.is_set():
+                raise EncodingCancelled()
             if self.before_work:
                 self.before_work(job)
             if job.start_seconds:
@@ -195,6 +235,8 @@ class HlsJobs:
                     self.on_finish(job, series_id, episode, source)
                 except Exception:
                     pass  # Optional prefetch bookkeeping is not a media failure.
+            if encoder_acquired:
+                self.encoder_slots.release()
             with self.guard:
                 job.done.set()
                 job.ready.set()
