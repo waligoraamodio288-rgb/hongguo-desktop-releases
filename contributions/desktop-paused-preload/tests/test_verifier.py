@@ -16,11 +16,18 @@ class ProbeTests(unittest.TestCase):
         self.assertEqual(probe.preload_outcome({'native': {'preloadLimited': False, 'cacheComplete': True}}), 'complete')
         self.assertIsNone(probe.preload_outcome({'native': {'preloadLimited': False, 'cacheComplete': False}}))
 
-    def test_budget_requires_stable_bytes_and_one_range_overshoot(self):
-        self.assertTrue(probe.budget_stable([1050] * 16, 1000, 100))
+    def test_budget_requires_stable_bytes_without_overshoot(self):
+        self.assertTrue(probe.budget_stable([1000] * 16, 1000, 100))
         self.assertFalse(probe.budget_stable([1050 + i * 2 for i in range(16)], 1000, 100))
         self.assertFalse(probe.budget_stable([1101] * 16, 1000, 100))
         self.assertFalse(probe.budget_stable([1050], 1000, 100))
+
+    def test_deadline_scales_with_100mib_rate_and_is_bounded(self):
+        self.assertGreater(probe.preload_timeout(100*1024**2,.12),100*1024**2/65536*.12)
+        self.assertLessEqual(probe.preload_timeout(2*1024**3,.12),3600)
+        self.assertEqual(probe.preload_timeout(100*1024**2,0,60),60)
+        for value in (0,-1,3601,float('nan')):
+            with self.assertRaises(ValueError):probe.preload_timeout(100,0,value)
 
     def test_waits_for_delayed_server_start(self):
         server = SimpleNamespace(started=False)

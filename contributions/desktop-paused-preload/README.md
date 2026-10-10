@@ -1,37 +1,37 @@
-# 暂停后继续加载当前集（补丁）
+# 暂停后继续加载当前集
 
-原生渐进播放此前 `cache-secs=12`、`demuxer-readahead-secs=12`，暂停后够约12秒就停止读取；前端轮询仍在运行，灰条停止反映的是实际预读已停止。此补丁扩展原生播放器缓存策略，暂停只停播放时钟，继续读取并保留当前集的媒体包，已有灰条按真实可播范围推进。
+原生播放器暂停后约12秒就停止预读，灰条随之停止。本补丁在暂停时顺序读取当前集的原片 Range 块，恢复播放和 seek 复用已存块；没有缓存时继续正常网络读取。只影响当前原生会话，后三集预取仍由 #187 负责。
 
-依赖 HEVC 原生播放贡献的 `desktop_native.py` 基线，SHA256 `359ed5df703aa03cf4346297f2ec55292de6fdfa846290a6f70eb7489269b115`。补丁应用后SHA256为 `541feefa79d388474fb77a9d82c41ded8b46e1d9744f4ca6cee219179b331c48`，与本机完成实际窗口验收的实现一致。基线漂移时先手工审查适配，不强行覆盖。
+依赖 #204 的 `b330417cd2ab9ddc1a558cd897ffb423b7f407fc`，各文件 LF 规范化后的补丁前后 SHA256 见 `BASELINES.json`。这是公开接入材料，合并不代表发行版已经修复；不包含 EXE、第三方 DLL、真实视频或账号数据。
 
-复用mpv原生磁盘缓存，文件留在既有UUID会话目录，关闭/切集释放。单会话磁盘软限512MiB，允许一轮读取超调；到限后停止文件增长，使用约12秒有界内存预读，不因此转码。Range内存16MiB、包内存32MiB，packet元数据仍占内存。`demuxer-cache-wait=no` 保证首帧就绪即播放，不等待整集。`cacheFileBytes/cacheComplete/preloadLimited`只是会话缓存状态，不含上游地址或内容密钥。[mpv官方缓存说明](https://mpv.io/manual/stable/#options-cache-on-disk)。
+## 缓存与生命周期
+
+新增 `src/desktop_range_cache.py`，将原片块保存在已有 UUID 会话目录。写入 owner 在锁内先检查预算再写文件，默认单会话512MiB，物理文件不允许超调。关闭 mpv 的 append-only 磁盘缓存，保留约12秒、32MiB 有界包内存和16MiB Range 内存；达到磁盘预算或磁盘写失败后，后台停止填充，前台继续正常读取，沿用原解码器。
+
+`cacheFileBytes/cacheComplete/preloadLimited` 来自块缓存 owner。只有原片完整时才报告完整范围；不把下载字节比例当作可播进度。退出和切集取消后台并关闭文件，随后由会话 owner 清理目录。非完整原片包含的块不能单独作为离线完整缓存。
 
 ## 应用与验证
 
-维护者把原生贡献接入私有backend后，在源码仓库检查并应用 `enable-paused-preload.patch`。这是发行仓库的接入材料，合并不等于用户已更新；不附EXE、视频或第三方DLL。
+将新增模块加入私有 backend，然后检查、应用 `enable-paused-preload.patch`。补丁覆盖 `desktop_stream.py`、`desktop_hls_service.py` 和 `desktop_native.py`；基线漂移时先适配，不强制覆盖。
 
 ```pwsh
 pwsh -NoProfile -Command "git apply --check <contribution-dir>/enable-paused-preload.patch"
 pwsh -NoProfile -Command "git apply <contribution-dir>/enable-paused-preload.patch"
-pwsh -NoProfile -Command "python -I contributions/desktop-paused-preload/tests/test_patch.py --native-package <native-contribution-dir>"
+pwsh -NoProfile -Command "python -I contributions/desktop-paused-preload/tests/test_patch.py --native-package <native-dir> --prefetch-package <prefetch-dir>"
 ```
 
-`tests/verify_preload.py` 可在Windows x64，用原生和 #187 的贡献目录、经核验的libmpv及自有媒体复测。它在临时目录拼装模块并打补丁，启动自己离屏父窗口和本机鉴权API，不启动或控制用户播放器。使用公开测试密钥将自有输入重新封装为限速CENC，测试只放行原生input-hook夹具，不能代替实际鼠标/键盘验收。
+测试核对摘要、补丁可应用性与编译，运行原生回归及缓存/验证器测试。覆盖无节流并发写入不超预算、重复与取消写入、完整块复用、磁盘失败，以及依据输入大小和限速计算验证期限。可选真实 HEVC 包一致性用例未配置时明确跳过。
+
+`tests/verify_preload.py` 在 Windows x64 使用经核验的 libmpv、自有 HEVC 媒体、本机鉴权 API 和离屏父窗口；不控制用户播放器。它将自有媒体封装成测试 CENC，测试只放行 input-hook 夹具，不能代替实际鼠标/键盘验收。
 
 ```pwsh
 pwsh -NoProfile -Command "python -I contributions/desktop-paused-preload/tests/verify_preload.py --native-package <native-dir> --prefetch-package <prefetch-dir> --mpv <verified-libmpv-2.dll> --source <owned-hevc.mp4> --sha <sha256> --run <owned-output-dir>"
 ```
 
-加 `--software` 强制软解；加 `--cache-budget 1048576` 注入1MiB测试预算。工具生成的本机报告和重新封装视频不提交上游。测试依赖沿用原生贡献的requirements-test.txt。
+`--software` 强制软解；`--cache-budget 1048576 --range-delay 0` 验证无节流1MiB硬预算。默认 Range 延迟0.12秒，验证期限随输入块数增长，最多3600秒；可用 `--preload-timeout` 在1至3600秒内显式指定。达限后采样3秒，最大物理文件大小不得超过预算，末尾1秒必须稳定。报告及媒体不提交。
 
-本机补丁可应用性通过；三个导出包组合的真实原生/API复测9项通过：暂停0秒、加载由局部推进到165.628秒整集，零H.264，恢复2x/3x、后三集原片下载、暂停seek和关闭释放通过。此前同一实现的实际Tauri/WebView2硬解及强制软解各12项验收通过：位置固定约4秒，原WR灰条从18.46%增长至100%；1MiB预算降级也保持原解码器。A-V来自内核时钟，未重新测CPU或物理输出。
+维护者接入发布前，仍需验证真实前端 #189 灰条、冷缓存、慢网、断网、快速切集、默认音频与倍速恢复。此补丁不提供连续画面录制结论，也不宣称正式版已无黑屏。Related to #23、#181：发布并完成暂停加载/恢复验收后再考虑关闭；#202/#199 仅部分覆盖，不自动关闭。
 
-维护者发布前仍须验证真实前端轮询与 #189 灰条、快速切集/取消/退出、默认音频及三倍速，并在慢网、断网、达限时检查没有误转码。后三集缓存策略由 #187 负责，此补丁仅改变当前原生会话预读。
+回滚撤销补丁和新增模块，恢复约12秒预读；保留用户原片与观看记录。
 
-Related to #23、#181；接入、发布并验证暂停继续预取与恢复后再考虑关闭。#202/#199/#173只关联部分路径，#151/#69仍需CPU/功耗复测。回滚用git revert本补丁，恢复约12秒预读；不要删除用户原片。完整Issue矩阵见原生播放贡献的ISSUES.md。
-
-复审补充：不论是否指定--cache-budget，都按实际preloadLimited选择达限结果；达限后继续采样3秒，允许一Range（64KiB）超调，末尾1秒必须稳定。强制软解1MiB真实复测8项通过，缓存停在1,062,668字节，2x/3x默认音频、后三集零编码和释放通过。倍速恢复按有界等待验证继续推进和A-V，不作为吞吐/CPU结论；首次固定1.2秒等待曾过早失败，已改为最多6秒等待。服务先确认监听再启动client。独立验证器4项单测覆盖默认达限、持续增长负例及启动延迟/失败/超时：
-
-```pwsh
-pwsh -NoProfile -Command "python -I contributions/desktop-paused-preload/tests/test_verifier.py"
-```
+当前公开组合43项：42项通过、1项可选HEVC跳过。自有40秒合成HEVC+AAC实际mpv/API复测：无节流1MiB硬预算8项通过、正常输入9项通过，涵盖暂停加载、2x/3x恢复、seek和释放；未据此宣称真实UI或像素连续性验收。

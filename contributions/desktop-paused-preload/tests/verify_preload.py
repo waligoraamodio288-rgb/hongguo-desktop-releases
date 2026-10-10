@@ -4,6 +4,7 @@ import ctypes as C
 from ctypes import wintypes as W
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import secrets
@@ -28,11 +29,23 @@ def preload_outcome(value):
 
 
 def budget_stable(byte_samples, budget, range_bytes):
-    # The caller samples for three seconds after the cap. Allow one pending
-    # Range read, but require the last second (six samples) to stop growing.
+    # Sample actual bytes for three seconds: no write may exceed the budget,
+    # and the last second (six samples) must remain stable.
     return (len(byte_samples) >= 16 and
-            max(byte_samples) <= budget + range_bytes and
+            max(byte_samples) <= budget and
             len(set(byte_samples[-6:])) == 1)
+
+
+def preload_timeout(total_bytes, range_delay, override=None):
+    if (type(total_bytes) is not int or total_bytes <= 0 or
+            not math.isfinite(range_delay) or range_delay < 0):
+        raise ValueError('Invalid fixture size/delay')
+    if override is not None:
+        if not math.isfinite(override) or not 1 <= override <= 3600:
+            raise ValueError('Preload timeout must be between 1 and 3600 seconds')
+        return override
+    return min(3600, 30 + math.ceil(total_bytes / 65536) * range_delay * 3
+               + total_bytes / (8 * 1024 ** 2))
 
 
 def wait_server_started(server, thread, timeout=5):
@@ -55,13 +68,22 @@ def main():
     parser.add_argument('--sha', required=True)
     parser.add_argument('--software', action='store_true')
     parser.add_argument('--cache-budget', type=int)
+    parser.add_argument('--range-delay', type=float, default=.12)
+    parser.add_argument('--preload-timeout', type=float)
     args = parser.parse_args()
+    if args.cache_budget is not None and args.cache_budget <= 0:
+        parser.error('--cache-budget must be positive')
+    if not math.isfinite(args.range_delay) or args.range_delay < 0:
+        parser.error('--range-delay must be finite and non-negative')
     staging = tempfile.TemporaryDirectory()
     stage = Path(staging.name); backend = stage/'backend'; backend.mkdir()
     for source in (args.native_package.resolve()/'src',args.prefetch_package.resolve()/'src'):
-        for file in source.glob('*.py'):shutil.copyfile(file,backend/file.name)
+        for file in source.glob('*.py'):
+            (backend/file.name).write_text(file.read_text(encoding='utf-8'),encoding='utf-8',newline='\n')
+    for file in (Path(__file__).resolve().parents[1]/'src').glob('*.py'):
+        shutil.copyfile(file,backend/file.name)
     patch_file=Path(__file__).resolve().parents[1]/'enable-paused-preload.patch'
-    subprocess.run(['git','-C',str(stage),'apply',str(patch_file)],check=True)
+    subprocess.run(['git','-c','core.autocrlf=false','-C',str(stage),'apply',str(patch_file)],check=True)
     sys.path[:0] = [str(backend),str(Path(__file__).resolve().parent)]
     import desktop_native as module
     from desktop_native import NativeHost, NativeSession
@@ -72,13 +94,15 @@ def main():
     from fastapi import FastAPI
     import uvicorn
     assert hashlib.sha256(args.source.read_bytes()).hexdigest() == args.sha
-    if args.cache_budget: module.CACHE_FILE_BUDGET = args.cache_budget
+    if args.cache_budget is not None: module.CACHE_FILE_BUDGET = args.cache_budget
     run = args.run.resolve()
     (run/'reports').mkdir(parents=True,exist_ok=True)
     work = run/('pause-work-'+str(time.time_ns()))
     work.mkdir(parents=True)
     app = FastAPI()
     fixture = ProgressiveFixture(app, work, [args.source])
+    fixture.delay = args.range_delay
+    timeout = preload_timeout(fixture.files[0].stat().st_size, fixture.delay, args.preload_timeout)
     host = NativeHost(parent_pid=os.getpid(), hardware=not args.software,
                       dll_path=args.mpv.resolve())
     assert host.available
@@ -100,7 +124,8 @@ def main():
     server_thread = threading.Thread(target=lambda:server.run(sockets=[listener]),daemon=True)
     server_thread.start()
     report = {'pass':False,'forcedSoftware':args.software,'cacheBudget':module.CACHE_FILE_BUDGET,
-              'sourceSha256':args.sha,'checks':[],'pausedSamples':[]}
+              'sourceSha256':args.sha,'rangeDelay':fixture.delay,'preloadTimeout':timeout,
+              'checks':[],'pausedSamples':[]}
     done = threading.Event()
     errors = []
     def request(path,method='GET',body=None):
@@ -131,14 +156,14 @@ def main():
             session=host.sessions[identifier]
             check('first-frame-before-full-input',not initial['sourceProgress']['complete'] and initial['native']['outputReady'],initial)
             started=time.monotonic()
-            while time.monotonic()-started<60:
+            while time.monotonic()-started<timeout:
                 value=request('/'+identifier+'/status');report['pausedSamples'].append(value)
                 if preload_outcome(value):break
                 time.sleep(.2)
             limited = preload_outcome(value) == 'limited'
             if limited:
-                # A flag only confirms that the option commands were issued.
-                # Observe the byte count afterwards to catch ignored commands.
+                # Observe actual file bytes after the writer reports its cap.
+                # A state flag alone cannot prove the hard budget.
                 byte_samples = [value['native']['cacheFileBytes']]
                 for _ in range(15):
                     time.sleep(.2)
@@ -148,7 +173,7 @@ def main():
                 check('disk-budget-growth-stabilizes',
                       budget_stable(byte_samples, module.CACHE_FILE_BUDGET, ProgressiveSource.block_size),
                       {'bytes': byte_samples, 'observationSeconds': 3,
-                       'allowedOvershootBytes': ProgressiveSource.block_size})
+                       'allowedOvershootBytes': 0})
             samples=report['pausedSamples']
             check('pause-position-fixed',all(s['native']['paused'] and abs(s['native']['time'])<.1 for s in samples))
             if not limited:
