@@ -75,3 +75,5 @@ pwsh -NoProfile -Command "python -I contributions/desktop-playable-progress/test
 缺失片段只截断连续可播前缀，仍验证后续标签和媒体URI，防止尾部重复ENDLIST或非法MAP被遗漏；缺口之后已有的片段不累加。
 
 第二轮复审：含 EXT-X-GAP 的清单不报告可播，即使同名片段存在也返回空范围。当前 Python 22 项、Node 6 项通过。
+
+本地fMP4仅支持完整片段URI，含EXT-X-BYTERANGE的清单拒绝报告可播；完整缓存校验同步拒绝该标签，防止超出EOF仍显示整集。扩展不支持标签回归。 Python22项及Node6项通过。

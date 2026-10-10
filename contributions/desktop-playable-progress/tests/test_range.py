@@ -44,6 +44,7 @@ class RangeTests(unittest.TestCase):
         original=playlist.read_text(encoding='utf-8')
         for tag in ('#EXT-X-KEY:METHOD=AES-128,URI="missing.key"',
                     '#EXT-X-GAP',
+                    '#EXT-X-BYTERANGE:10@1000000',
                     '#EXT-X-SESSION-KEY:METHOD=SAMPLE-AES,URI="key"',
                     '#EXT-X-KEY:METHOD=NONE'):
             playlist.write_text(original.replace('#EXTINF:',tag+'\n#EXTINF:',1),encoding='utf-8')
