@@ -19,7 +19,7 @@ Python 3.10+、git、PyAV（本机18.1.0，含 libx264）：
 pwsh -NoProfile -Command "python -I contributions/desktop-frame-threading/tests/test_patch.py"
 ```
 
-两项测试分别验证最小补丁可应用，以及实际 PyAV 编码12个自造帧后用 AUTO 解码完整12帧。不访问网络或私有视频。该小样本只验证 API/解码可用，不能代表 HEVC 整集性能。
+两项测试分别验证最小补丁在 `core.autocrlf=false/true` 下均可应用，以及实际 PyAV 编码12个自造帧后用 AUTO 解码完整12帧。补丁和测试 fixture 固定使用 LF。不访问网络或私有视频。该小样本只验证 API/解码可用，不能代表 HEVC 整集性能。
 
 ## 本机真实 A/B（独立于 fixture）
 

@@ -14,10 +14,13 @@ class PatchTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             file = Path(root) / "backend/desktop_hls.py"
             file.parent.mkdir()
-            file.write_text(before, encoding="utf-8")
-            subprocess.run(["git", "apply", "--check", str(patch)], cwd=root, check=True, capture_output=True)
-            subprocess.run(["git", "apply", str(patch)], cwd=root, check=True, capture_output=True)
-            self.assertEqual(file.read_text(encoding="utf-8"), after)
+            for autocrlf in ("false", "true"):
+                with self.subTest(autocrlf=autocrlf):
+                    file.write_bytes(before.encode("utf-8"))
+                    git = ["git", "-c", "core.autocrlf=" + autocrlf, "apply"]
+                    subprocess.run([*git, "--check", str(patch)], cwd=root, check=True, capture_output=True)
+                    subprocess.run([*git, str(patch)], cwd=root, check=True, capture_output=True)
+                    self.assertEqual(file.read_text(encoding="utf-8"), after)
 
     def test_actual_pyav_decoder_accepts_auto(self):
         import av
