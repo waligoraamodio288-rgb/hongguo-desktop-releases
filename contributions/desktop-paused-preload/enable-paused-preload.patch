@@ -1,0 +1,133 @@
+--- a/backend/desktop_stream.py
++++ b/backend/desktop_stream.py
+@@ -157,14 +157,15 @@
+             if response is not None:
+                 response.close()
+ 
+-    def reader(self, cancelled=lambda: False):
+-        return RangeReader(self, cancelled)
++    def reader(self, cancelled=lambda: False, *, cache=None):
++        return RangeReader(self, cancelled, cache=cache)
+ 
+ 
+ class RangeReader(io.RawIOBase):
+-    def __init__(self, source, cancelled):
++    def __init__(self, source, cancelled, *, cache=None):
+         super().__init__()
+         self.source, self.cancelled = source, cancelled
++        self.cache = cache
+         self.stopped = threading.Event()
+         self.position = 0
+ 
+@@ -204,7 +205,11 @@
+         end, result = min(self.source.size, self.position + size), []
+         while self.position < end:
+             index, offset = divmod(self.position, self.source.block_size)
+-            block = self.source.block(index, self.interrupted)
++            block = self.cache.read(index) if self.cache else None
++            if block is None:
++                block = self.source.block(index, self.interrupted)
++                if self.cache:
++                    self.cache.store(index, block, self.interrupted)
+             part = block[offset:offset + min(end - self.position, len(block) - offset)]
+             if not part:
+                 raise SourceReadError("Invalid media block")
+--- a/backend/desktop_hls_service.py
++++ b/backend/desktop_hls_service.py
+@@ -39,6 +39,7 @@
+     start_seconds: float = 0.0
+     window_origin: float | None = 0.0
+     source: Path | ProgressiveSource | None = None
++    input_cache: object | None = field(default=None, repr=False)
+     stream_url: str | None = None
+     stream_key: str | None = field(default=None, repr=False)
+     negotiate_codec: bool = False
+@@ -422,7 +423,7 @@
+         response_headers.pop("Content-Length", None)
+         def chunks():
+             try:
+-                with source.reader(job.cancelled.is_set) as reader:
++                with source.reader(job.cancelled.is_set, cache=job.input_cache) as reader:
+                     reader.seek(start)
+                     remaining = end - start + 1
+                     while remaining:
+--- a/backend/desktop_native.py
++++ b/backend/desktop_native.py
+@@ -14,6 +14,9 @@
+ import threading
+ import time
+ from desktop_stream import ProgressiveSource, SourceReadError
++from desktop_range_cache import RangeDiskCache, preload
++
++CACHE_FILE_BUDGET = 512 * 1024 ** 2
+ 
+ DLL_SHA256 = "34780746a0273a4fcae42dfe262a28984a426a238939474afd3a1561b450bbef"
+ 
+@@ -288,6 +291,9 @@
+         last_progress, last_position, slow_since = initial, None, None
+         retried = False
+         frame_ready = False
++        disk_cache = None
++        preloader = None
++        preload_limited = False
+         progressive = isinstance(self.job.source, ProgressiveSource)
+         media_uri = str(self.job.source) if not progressive else self.job.stream_url
+         # Starting paused allows the frontend to place the surface and apply
+@@ -329,6 +335,14 @@
+             for key, value in options.items():
+                 player.option(key, value)
+             if progressive:
++                try:
++                    self.job.directory.mkdir(exist_ok=True)
++                    disk_cache = RangeDiskCache(self.job.directory / "source-range.cache",
++                                                CACHE_FILE_BUDGET, self.job.source.size)
++                    self.job.input_cache = disk_cache
++                except OSError:
++                    preload_limited = True  # Optional disk failure keeps normal playback.
++                player.option("cache-on-disk", "no")
+                 for key, value in {"cache": "yes", "cache-secs": "12", "demuxer-readahead-secs": "12",
+                                    "demuxer-max-bytes": "32MiB", "cache-pause": "yes",
+                                    "cache-pause-wait": "1", "demuxer-lavf-format": "mov"}.items():
+@@ -420,6 +434,22 @@
+                             buffer_start, buffer_end = max(0, selected["start"]), selected["end"]
+                     except (ValueError, TypeError, KeyError):
+                         pass
++                cache_state = {"cacheFileBytes": 0, "cacheComplete": False,
++                               "preloadLimited": preload_limited, "cacheKind": "original-range-blocks"}
++                if disk_cache:
++                    if output_ready and preloader is None:
++                        preloader = threading.Thread(target=preload,
++                            args=(self.job.source, disk_cache,
++                                  lambda: self.stop.is_set() or self.job.cancelled.is_set()),
++                            name="desktop-current-source-preload", daemon=True)
++                        try:
++                            preloader.start()
++                        except RuntimeError:
++                            preload_limited = True
++                    cache_state = disk_cache.snapshot()
++                    cache_state["preloadLimited"] |= preload_limited
++                    if cache_state["cacheComplete"]:
++                        buffer_start, buffer_end = 0, self.job.duration or buffer_end
+                 if last_position is None or abs(position - last_position) > .01 or paused or seeking:
+                     last_position, last_progress = position, now
+                 unstable = not paused and not buffering and not seeking and not eof and now > grace
+@@ -444,6 +474,7 @@
+                                      width=width, height=height, decoder="software" if hwdec == "no" else "hardware" if hwdec else "probing",
+                                      hwdec=hwdec, avsync=avsync, audioDevice=player.get("audio-device"),
+                                      buffering=buffering, outputReady=output_ready, bufferStart=buffer_start,
++                                     **cache_state,
+                                      bufferEnd=min(buffer_end, self.job.duration or buffer_end),
+                                      audioExclusive=player.get("audio-exclusive"), audioOutput=player.get("current-ao"),
+                                      frameDrops=player.number("frame-drop-count"), decoderDrops=player.number("decoder-frame-drop-count"))
+@@ -455,6 +486,11 @@
+             with self.guard:
+                 self.data.update(state="failed", failureCode="native-decode")
+         finally:
++            self.stop.set()
++            if disk_cache:
++                disk_cache.close()  # Close handle before the owning job removes its directory.
++            if preloader and preloader.is_alive():
++                preloader.join(timeout=1)
+             for surface, (previous, callback) in self.input_hooks.items():
+                 if user.IsWindow(surface):
+                     user.SetWindowLongPtrW(surface, -4, previous)
