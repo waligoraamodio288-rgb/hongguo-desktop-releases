@@ -1,0 +1,52 @@
+--- a/contributions/desktop-native-playback/src/frontend-native.js
++++ b/contributions/desktop-native-playback/src/frontend-native.js
+@@ -29,6 +29,7 @@
+     clearTimeout(timer); clearTimeout(controlTimer);
+     resize?.disconnect();
+     media.removeEventListener('desktopdanmaku', updateDanmaku);
++    media.removeEventListener('desktopsociallayout', updateSocialLayout);
+     document.removeEventListener('fullscreenchange', layout);
+     document.removeEventListener('visibilitychange', layout);
+     stage?.classList.remove('desktop-native-playback');
+@@ -82,7 +83,7 @@
+     } catch {if (!disposed) failPreparation();}
+     finally {
+       controlBusy = false;
+-      if (Object.keys(pending).length && !disposed && native) controlTimer = setTimeout(flush, 250);
++      if (Object.keys(pending).length && !disposed && native) controlTimer = setTimeout(flush, pending.rect ? 0 : 250);
+     }
+   }
+   function updateDanmaku() {
+@@ -98,8 +99,22 @@
+     const bounds = [Math.max(0, Math.round(rect.left * scale)), Math.max(0, Math.round(rect.top * scale)),
+       Math.max(1, Math.round(rect.width * scale)), Math.max(1, Math.round((rect.height - bar) * scale))];
+     const visible = !document.hidden && rect.width > 0 && rect.height > 0;
+-    const signature = JSON.stringify([bounds, visible]);
+-    if (signature !== lastRect) {lastRect = signature; queue({rect: bounds, visible});}
++    const panel = stage?.querySelector?.('.desktop-danmaku-panel')?.getBoundingClientRect();
++    const right = Math.min(rect.right ?? rect.left + rect.width, panel?.right ?? 0);
++    const bottom = Math.min(rect.top + rect.height - bar, panel?.bottom ?? 0);
++    const left = Math.max(rect.left, panel?.left ?? 0), top = Math.max(rect.top, panel?.top ?? 0);
++    const occlusion = panel && right > left && bottom > top ? [
++      Math.max(0,Math.floor((left-rect.left)*scale)), Math.max(0,Math.floor((top-rect.top)*scale)),
++      Math.ceil((right-left)*scale), Math.ceil((bottom-top)*scale)] : [];
++    const signature = JSON.stringify([bounds, visible, occlusion]);
++    if (signature !== lastRect) {
++      lastRect = signature; queue({rect: bounds, visible, occlusion});
++      if (!controlBusy) {clearTimeout(controlTimer); controlTimer = null; flush();}
++    }
++  }
++  function updateSocialLayout() {
++    layout();
++    if (!controlBusy) {clearTimeout(controlTimer); controlTimer = null; flush();}
+   }
+   function seek(value) {
+     if (disposed || !Number.isFinite(value)) return;
+@@ -154,6 +169,7 @@
+     document.addEventListener('fullscreenchange', layout);
+     document.addEventListener('visibilitychange', layout);
+     media.addEventListener('desktopdanmaku', updateDanmaku);
++    media.addEventListener('desktopsociallayout', updateSocialLayout);
+     updateDanmaku();
+     layout();
+   }
