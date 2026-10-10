@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict';
+import {createComments} from '../src/comments.mjs';
+const storage=new Map();
+globalThis.localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v)};
+globalThis.CustomEvent=class extends Event{constructor(type,options){super(type);this.detail=options.detail;}};
+const api=createComments({React:{},jsxRuntime:{},installStyles(){},resolveEndpoint:url=>({url,origin:'http://127.0.0.1:1234',key:'fixture-only'}),danmaku:{settings:v=>v},emojis:{}});
+const endpoint=api.endpoint({streamUrl:'http://127.0.0.1:1234/stream?series_id=1000000000000000001&ep=2'});
+let request;
+globalThis.fetch=async(url,options)=>{request={url:new URL(url),options};return {ok:true,json:async()=>({items:[]})};};
+await api.read(endpoint,'comments',{kind:'episode',cursor:'opaque:+/=='});
+assert.equal(request.url.searchParams.get('cursor'),'opaque:+/==');
+assert.equal(request.options.headers['x-api-key'],'fixture-only');
+assert.equal(request.url.searchParams.has('key'),false);
+assert.equal(request.options.credentials,'omit');assert.equal(request.options.redirect,'error');
+const media=new EventTarget();let changes;media.addEventListener('desktopsocialsettings',e=>changes=e.detail);
+api.set(media,{social:true});assert.equal(api.preference('social',false),true);assert.equal(api.preference('danmaku',false),false);
+api.set(media,{danmaku:true});api.set(media,{social:false});assert.equal(api.preference('danmaku',false),true);
+assert.equal(changes.social,false);
+globalThis.fetch=async()=>({ok:false});await assert.rejects(()=>api.read(endpoint,'comments'),/加载失败/);
+assert.equal(api.endpoint({streamUrl:'bad'}),null);
+const abort=new AbortController();
+globalThis.fetch=async(url,{signal})=>new Promise((_,reject)=>{
+  if(signal.aborted)reject(new DOMException('Aborted','AbortError'));
+  else signal.addEventListener('abort',()=>reject(new DOMException('Aborted','AbortError')),{once:true});
+});
+const pending=api.read(endpoint,'comments',{},abort.signal);abort.abort();
+await assert.rejects(pending,{name:'AbortError'});
+const savedTimeout=globalThis.setTimeout;
+globalThis.setTimeout=(callback,ms)=>{assert.equal(ms,15000);queueMicrotask(callback);return 0;};
+try{await assert.rejects(api.read(endpoint,'comments'),{name:'AbortError'});}finally{globalThis.setTimeout=savedTimeout;}
+console.log('PASS shared read authentication, opaque cursor, errors and independent persistent toggles');
