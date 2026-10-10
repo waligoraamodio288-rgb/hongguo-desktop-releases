@@ -50,7 +50,9 @@ class PlayableEpisodeCache:
             Path(path).read_bytes() for path in profile_files
         )).hexdigest()
 
-    def _identity(self, source, video_mode="h264"):
+    def _identity(self, source, video_mode="h264", cancelled=lambda: False):
+        if cancelled():
+            raise EncodingCancelled()
         if video_mode not in ("h264", "copy"):
             raise ValueError("Unknown desktop video mode")
         identity = getattr(source, "cache_identity", None)
@@ -61,16 +63,23 @@ class PlayableEpisodeCache:
             info = source.stat()
             value = {"name": source.name, "size": info.st_size,
                      "mtimeNs": info.st_mtime_ns, "profile": self.profile,
-                     "sha256": self._digest(source)}
+                     "sha256": self._digest(source, cancelled)}
         if video_mode != "h264":
             value["videoMode"] = video_mode
         return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest(), value
 
     @staticmethod
-    def _digest(path):
+    def _digest(path, cancelled=lambda: False):
         digest = hashlib.sha256()
         with path.open("rb") as stream:
-            for block in iter(lambda: stream.read(1024 * 1024), b""):
+            while True:
+                if cancelled():
+                    raise EncodingCancelled()
+                block = stream.read(1024 * 1024)
+                if cancelled():
+                    raise EncodingCancelled()
+                if not block:
+                    break
                 digest.update(block)
         return digest.hexdigest()
 
@@ -131,11 +140,11 @@ class PlayableEpisodeCache:
                 raise ValueError("Artifact fragment is unavailable")
         return names
 
-    def _validated(self, source, video_mode="h264"):
+    def _validated(self, source, video_mode="h264", cancelled=lambda: False):
         if not self.available:
             return None
         try:
-            key, identity = self._identity(source, video_mode)
+            key, identity = self._identity(source, video_mode, cancelled)
             directory = self.root / key
             manifest_path = directory / "cache.json"
             if not plain(directory) or not plain(manifest_path):
@@ -148,20 +157,22 @@ class PlayableEpisodeCache:
             if set(manifest["files"]) != set(names):
                 return None
             for name in names:
+                if cancelled():
+                    raise EncodingCancelled()
                 item = directory / name
-                if manifest["files"][name] != {"bytes": item.stat().st_size, "sha256": self._digest(item)}:
+                if manifest["files"][name] != {"bytes": item.stat().st_size, "sha256": self._digest(item, cancelled)}:
                     return None
             return directory, names
         except (OSError, ValueError, KeyError, TypeError):
             return None
 
-    def contains(self, source, video_mode="h264"):
+    def contains(self, source, video_mode="h264", *, cancelled=lambda: False):
         with self.guard:
-            return self._validated(source, video_mode) is not None
+            return self._validated(source, video_mode, cancelled) is not None
 
     def restore(self, source, directory, cancelled=lambda: False, *, video_mode="h264"):
         with self.guard:
-            artifact = self._validated(source, video_mode)
+            artifact = self._validated(source, video_mode, cancelled)
             if artifact is None:
                 return False
             cached, names = artifact
@@ -204,6 +215,8 @@ class PlayableEpisodeCache:
     def _reserve(self, needed):
         if not self.available:
             raise OSError("Playable cache is unavailable")
+        if not 0 <= needed <= self.quota_bytes:
+            raise OSError("Playable cache reservation cannot fit")
         entries = []
         total = 0
         for directory in self.root.iterdir():
@@ -224,6 +237,8 @@ class PlayableEpisodeCache:
                     entries.append((modified, directory, size))
             except (OSError, UnicodeError):
                 continue
+        if total + needed - sum(size for _, _, size in entries) > self.quota_bytes:
+            raise OSError("Playable cache reservation cannot fit")
         for _, directory, size in sorted(entries):
             if total + needed <= self.quota_bytes:
                 return
@@ -235,8 +250,10 @@ class PlayableEpisodeCache:
     def store(self, source, directory, cancelled=lambda: False, *, video_mode="h264"):
         if cancelled():
             raise EncodingCancelled()
+        if not self.available:
+            return None
         with self.guard:
-            key, identity = self._identity(source, video_mode)
+            key, identity = self._identity(source, video_mode, cancelled)
             names = self._media_files(Path(directory))
             needed = sum((Path(directory) / name).stat().st_size for name in names) + 65536
             directory = Path(directory)
@@ -259,7 +276,7 @@ class PlayableEpisodeCache:
                     target = stage / name
                     if not adopt:
                         shutil.copyfile(directory / name, target)
-                    files[name] = {"bytes": target.stat().st_size, "sha256": self._digest(target)}
+                    files[name] = {"bytes": target.stat().st_size, "sha256": self._digest(target, cancelled)}
                 if cancelled():
                     raise EncodingCancelled()
                 manifest = {"owner": OWNER, "source": identity, "files": files}
@@ -283,8 +300,9 @@ class PlayableEpisodeCache:
             except OSError:
                 pass
         if start_seconds:
+            extra = {"video_mode": "copy"} if video_mode == "copy" else {}
             self.encoder(source, directory, on_ready, cancelled=cancelled,
-                         start_seconds=start_seconds, on_window=on_window)
+                         start_seconds=start_seconds, on_window=on_window, **extra)
         else:
             extra = {"video_mode": "copy"} if video_mode == "copy" else {}
             self.encoder(source, directory, on_ready, cancelled=cancelled, **extra)

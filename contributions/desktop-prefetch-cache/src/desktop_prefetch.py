@@ -148,9 +148,15 @@ class EpisodePrefetcher:
             expected = self.foreground.get(job.id)
         mode = getattr(job, "video_mode", "h264")
         # Validation hashes source/media bytes. Never hold the scheduling lock for I/O.
-        current_complete = (self.cache.contains(source, mode)
-                            if expected is not None and source is not None
-                            and mode != "native" and not job.failed and not job.cancelled.is_set() else False)
+        def cancelled():
+            with self.condition:
+                return self.closed or job.cancelled.is_set() or expected != self.generation
+        current_complete = False
+        try:
+            if expected is not None and source is not None and mode != "native" and not job.failed and not cancelled():
+                current_complete = self.cache.contains(source, mode, cancelled=cancelled)
+        except EncodingCancelled:
+            pass  # Completion bookkeeping still releases the old foreground slot.
         with self.condition:
             generation = self.foreground.pop(job.id, None)
             if self.busy == job.id:
@@ -215,7 +221,7 @@ class EpisodePrefetcher:
                 if cancel.is_set():
                     raise EncodingCancelled()
                 mode = task[3]
-                if not self.cache.contains(source, mode):
+                if not self.cache.contains(source, mode, cancelled=cancel.is_set):
                     with self.cache.guard:
                         if cancel.is_set():
                             raise EncodingCancelled()
