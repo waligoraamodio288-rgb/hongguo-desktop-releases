@@ -50,7 +50,8 @@ class PlayableEpisodeCache:
         source = Path(source)
         info = source.stat()
         value = {"name": source.name, "size": info.st_size,
-                 "mtimeNs": info.st_mtime_ns, "profile": self.profile}
+                 "mtimeNs": info.st_mtime_ns, "profile": self.profile,
+                 "sha256": self._digest(source)}
         return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest(), value
 
     @staticmethod
@@ -76,7 +77,8 @@ class PlayableEpisodeCache:
         if not segments or len(set(segments)) != len(segments) or any(
                 not re.fullmatch(r"seg[0-9]{6}\.m4s", name) for name in segments):
             raise ValueError("Invalid artifact segment names")
-        names = ["index.m3u8", "init.mp4", "complete.marker", *segments]
+        # The marker is the commit signal, including when restoring a session.
+        names = ["index.m3u8", "init.mp4", *segments, "complete.marker"]
         for name in names:
             path = directory / name
             if not plain(path) or not path.is_file() or path.stat().st_size == 0:
@@ -122,8 +124,9 @@ class PlayableEpisodeCache:
                     if cancelled():
                         raise EncodingCancelled()
                     destination = directory / name
-                    shutil.copyfile(cached / name, destination)
+                    # copyfile may create a partial destination before raising.
                     created.append(destination)
+                    shutil.copyfile(cached / name, destination)
                 os.utime(cached / "cache.json", None)
                 return True
             except BaseException:
