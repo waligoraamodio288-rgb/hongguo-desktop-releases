@@ -20,8 +20,17 @@ function desktopNativePlayback(media, url, initialPosition, callbacks, preparati
     return response.status === 204 ? null : response.json();
   }
   async function release(identifier) {
-    if (!identifier) return;
-    try {await request('/' + identifier, {method: 'DELETE'});} catch {}
+    if (!identifier) return true;
+    const deadline = Date.now() + 15000;
+    try {
+      do {
+        const result = await request('/' + identifier, {method:'DELETE'});
+        if (result?.released !== false) return true;
+        if (Date.now() >= deadline) return false;
+        await new Promise(resolve=>setTimeout(resolve,100));
+      } while (Date.now() < deadline);
+    } catch {}
+    return false;
   }
   function restore() {
     if (restored) return;
@@ -51,8 +60,9 @@ function desktopNativePlayback(media, url, initialPosition, callbacks, preparati
     const old = id; id = null;
     restore();
     // Stop the native audio before the HLS element is allowed to autoplay.
-    await release(old);
+    const stopped = await release(old);
     if (disposed) return;
+    if (!stopped) {callbacks.onComplete?.(false);callbacks.onError?.();return;}
     delegated = desktopCodecHls(media, url, Math.max(0, state.time), callbacks,
       forceH264 ? null : preparation, windowed, {forceH264, paused: state.paused});
   }

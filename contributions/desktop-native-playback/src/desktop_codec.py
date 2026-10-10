@@ -17,6 +17,12 @@ def video_codec_string(name, extra):
     return None
 
 
+def aac_lc(context):
+    extra = context.extradata or b""
+    return (context.name == "aac" and len(extra) >= 2 and extra[0] >> 3 == 2
+            and getattr(context, "profile", None) in (None, "LC"))
+
+
 def describe_streams(media):
     if len(media.streams.video) != 1:
         return {"copyEligible": False}
@@ -33,8 +39,7 @@ def describe_streams(media):
     audio = []
     for track in media.streams.audio:
         c = track.codec_context
-        extra = c.extradata or b""
-        if c.name != "aac" or not extra or extra[0] >> 3 != 2:
+        if not aac_lc(c):
             # HLS packet-copy limits must not hide a recognized video codec:
             # native playback decodes the original audio itself.
             copy_eligible = False

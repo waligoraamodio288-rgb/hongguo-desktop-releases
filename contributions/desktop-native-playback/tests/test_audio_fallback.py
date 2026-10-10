@@ -3,12 +3,21 @@ from fractions import Fraction
 from pathlib import Path
 import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 import av
 from desktop_hls import encode_hls, EncodingCancelled
 from desktop_hls_budget import EncodingBudgetExceeded
+from desktop_codec import aac_lc
 
 
 class AudioFallbackTests(unittest.TestCase):
+    def test_only_qualified_aac_lc_can_be_copied(self):
+        self.assertTrue(aac_lc(SimpleNamespace(name='aac',extradata=b'\x12\x10',profile='LC')))
+        for extra,profile in ((b'',None),(b'\x12',None),(b'\x2b\x92','HE-AAC'),
+                              (b'\xeb\x92','HE-AACv2'),(b'\x12\x10','HE-AAC')):
+            self.assertFalse(aac_lc(SimpleNamespace(name='aac',extradata=extra,profile=profile)))
+
     def setUp(self):
         temp=tempfile.TemporaryDirectory();self.addCleanup(temp.cleanup)
         self.root=Path(temp.name);self.source=self.root/'opus.mkv'
@@ -56,3 +65,13 @@ class AudioFallbackTests(unittest.TestCase):
             encode_hls(self.source,self.root/'cancel',cancelled=cancel)
         for name in ('budget','cancel'):
             self.assertFalse((self.root/name/'complete.marker').exists())
+
+    def test_rejected_aac_qualification_uses_real_aac_encoder(self):
+        first=self.root/'first';encode_hls(self.source,first)
+        # Force the unsupported-profile decision on a decodable AAC fixture;
+        # actual HE-AAC encoder availability is not assumed in the test host.
+        with patch('desktop_hls.aac_lc',return_value=False):
+            target=self.root/'recoded';encode_hls(first/'index.m3u8',target)
+        with av.open(str(target/'index.m3u8')) as media:
+            self.assertEqual(media.streams.audio[0].codec_context.profile,'LC')
+            self.assertTrue(list(media.decode(audio=0)))

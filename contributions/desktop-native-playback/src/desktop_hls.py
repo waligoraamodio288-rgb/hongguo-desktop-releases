@@ -8,6 +8,7 @@ from fractions import Fraction
 import math
 from desktop_stream import open_media
 from desktop_hls_budget import EncodingBudgetExceeded, video_budget_options
+from desktop_codec import aac_lc
 
 
 class EncodingCancelled(Exception):
@@ -105,7 +106,7 @@ def encode_hls(source, directory, on_ready=lambda: None, *, cancelled=lambda: Fa
             audio = {}
             resamplers = {}
             for stream in reader.streams.audio:
-                if stream.codec_context.name == "aac":
+                if aac_lc(stream.codec_context):
                     audio[stream.index] = writer.add_stream_from_template(stream)
                 else:
                     output = writer.add_stream("aac", rate=48000)

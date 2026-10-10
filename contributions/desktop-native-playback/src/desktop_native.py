@@ -168,9 +168,10 @@ class NativeHost:
         with self.guard:
             if job.cancelled.is_set():
                 raise RuntimeError("Native job cancelled")
-            for previous in list(self.sessions.values()):
-                previous.close()
-            self.sessions.clear()
+            for identifier, previous in list(self.sessions.items()):
+                if previous.close() is False:
+                    raise RuntimeError("Previous native session is stopping")
+                self.sessions.pop(identifier, None)
             session = NativeSession(self, job, self.parent_window())
             self.sessions[job.id] = session
             try:
@@ -178,8 +179,8 @@ class NativeHost:
                 if job.cancelled.is_set():
                     raise RuntimeError("Native job cancelled")
             except BaseException:
-                self.sessions.pop(job.id, None)
-                session.close()
+                if session.close() is not False:
+                    self.sessions.pop(job.id, None)
                 raise
 
     def snapshot(self, identifier):
@@ -197,9 +198,13 @@ class NativeHost:
 
     def release(self, identifier):
         with self.guard:
-            session = self.sessions.pop(identifier, None)
-        if session:
-            session.close()
+            session = self.sessions.get(identifier)
+        if session and session.close() is False:
+            return False
+        with self.guard:
+            if self.sessions.get(identifier) is session:
+                self.sessions.pop(identifier, None)
+        return True
 
 
 class NativeSession:
@@ -278,6 +283,7 @@ class NativeSession:
         self.stop.set()
         if self.thread.is_alive() and self.thread is not threading.current_thread():
             self.thread.join(timeout=3)
+        return not self.thread.is_alive()
 
     def run(self):
         player = None
@@ -293,13 +299,13 @@ class NativeSession:
         # Starting paused allows the frontend to place the surface and apply
         # its remembered speed/volume before either picture or sound advances.
         desired = {"paused": True, "rate": 1, "volume": 1, "muted": False}
-        def retry_software():
+        def retry_software(*, no_frame=False):
             nonlocal retried, initial, grace, last_progress, slow_since, frame_ready
             if retried or player.get("hwdec-current") == "no":
                 raise RuntimeError("Software decoding failed")
             retried = True
             frame_ready = False
-            position = player.number("time-pos", self.job.start_seconds)
+            position = self.job.start_seconds if no_frame else player.number("time-pos", self.job.start_seconds)
             player.command("set", "hwdec", "no")
             player.command("set", "start", position)
             player.command("loadfile", media_uri)
@@ -404,7 +410,7 @@ class NativeSession:
                     # input surface without restoring click/key forwarding.
                     output_ready = self.forward_input(hwnd)
                 if eof and not output_ready:
-                    retry_software()
+                    retry_software(no_frame=True)
                     continue
                 avsync = player.number("avsync")
                 buffering = progressive and (player.get("paused-for-cache") == "yes"

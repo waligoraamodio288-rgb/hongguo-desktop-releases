@@ -16,7 +16,7 @@ from desktop_codec import describe_streams
 from desktop_stream import ProgressiveSource, SourceReadError, open_media, source_progress
 
 from fastapi import APIRouter, HTTPException, Request, Depends
-from fastapi.responses import FileResponse, Response, StreamingResponse
+from fastapi.responses import FileResponse, Response, StreamingResponse, JSONResponse
 from desktop_hls import encode_hls, EncodingCancelled
 from desktop_hls_budget import EncodingBudgetExceeded
 
@@ -69,12 +69,12 @@ class HlsJobs:
         while not self.closed.wait(min(1.0, max(.05, self.idle_seconds / 4))):
             with self.guard:
                 expired = [job.id for job in self.jobs.values()
-                           if time.monotonic() - job.touched > self.idle_seconds]
+                           if job.cancelled.is_set() or time.monotonic() - job.touched > self.idle_seconds]
             for identifier in expired:
                 # Recheck under the lock: a status poll may have renewed it.
                 with self.guard:
                     job = self.jobs.get(identifier)
-                    if job and time.monotonic() - job.touched > self.idle_seconds:
+                    if job and (job.cancelled.is_set() or time.monotonic() - job.touched > self.idle_seconds):
                         self.release(identifier)
             with self.guard:
                 if not self.jobs:
@@ -241,6 +241,8 @@ class HlsJobs:
                 job.done.set()
                 job.ready.set()
                 if job.cancelled.is_set():
+                    if self.native and self.native.release(job.id) is False:
+                        return  # Native owner still holds its window/source.
                     try:
                         self._remove_output(job)
                     except OSError:
@@ -263,7 +265,8 @@ class HlsJobs:
                 return
             job.cancelled.set()
             if self.native:
-                self.native.release(identifier)
+                if self.native.release(identifier) is False:
+                    return False  # Retain ownership/output until native teardown finishes.
             job.mode_selected.set()
             job.ready.set()
             if job.done.is_set():
@@ -498,7 +501,8 @@ def make_router(jobs, valid_key):
 
     @router.delete("/{identifier}")
     def release(identifier: str):
-        jobs.release(identifier)
+        if jobs.release(identifier) is False:
+            return JSONResponse({"released": False}, status_code=202, headers=headers)
         return Response(status_code=204)
 
     @router.get("/{identifier}/index.m3u8")

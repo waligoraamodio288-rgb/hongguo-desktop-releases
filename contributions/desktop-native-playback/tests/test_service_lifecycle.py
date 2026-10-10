@@ -8,7 +8,7 @@ import unittest
 
 import av
 from fastapi import HTTPException
-from desktop_hls_service import HlsJobs
+from desktop_hls_service import HlsJobs, make_router
 
 
 def eventually(predicate, timeout=3):
@@ -21,6 +21,19 @@ def eventually(predicate, timeout=3):
 
 
 class LifecycleTests(unittest.TestCase):
+    def test_delete_reports_pending_until_native_teardown_and_preserves_output(self):
+        native=SimpleNamespace(release=lambda _:False)
+        jobs=self.jobs(native=native)
+        jobs._run=lambda *_:None
+        job=jobs.create('1234567890123456',1)
+        job.directory.mkdir();(job.directory/'owned').write_bytes(b'owned');job.done.set()
+        delete=next(r.endpoint for r in make_router(jobs,lambda _:True).routes if r.path.endswith('/{identifier}') and 'DELETE' in r.methods)
+        self.assertEqual(delete(job.id).status_code,202)
+        self.assertIn(job.id,jobs.jobs);self.assertTrue(job.directory.exists())
+        native.release=lambda _:True
+        self.assertEqual(delete(job.id).status_code,204)
+        self.assertNotIn(job.id,jobs.jobs);self.assertFalse(job.directory.exists())
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

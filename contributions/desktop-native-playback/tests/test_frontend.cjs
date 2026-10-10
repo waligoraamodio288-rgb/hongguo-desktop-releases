@@ -89,22 +89,22 @@ const flush=async()=>{for(let i=0;i<10;i++)await new Promise(setImmediate)};
   nativeDispose();await flush();
   assert(nativeCalls.some(([,init])=>init.method==='DELETE'));
   console.log('PASS: HE-AACv2 keeps native HEVC selection while HLS packet copy remains disabled');
-  for(const kind of ['source-timeout','source-failed','transport-failed','native-source-failed','native-failed']){
+  for(const kind of ['source-timeout','source-failed','transport-failed','native-source-failed','native-failed','native-stopping']){
     nativeCalls.length=0;nativeTimers.clear();delegated=0;
     let errors=0,modeChosen=false,clock=0,forced;
-    nc.Date={now:()=>kind==='source-timeout'?(clock+=90001):0};
+    nc.Date={now:()=>kind==='source-timeout'||kind==='native-stopping'&&modeChosen?(clock+=90001):0};
     nc.desktopCodecHls=(...args)=>{delegated++;forced=args[6]?.forceH264;return ()=>{}};
     nc.fetch=async(url,init={})=>{
       url=String(url);nativeCalls.push([url,init]);
       let body;
       if(url.endsWith('/capabilities'))body={nativePlayback:1};
-      else if(init.method==='DELETE')return {ok:true,status:204};
+      else if(init.method==='DELETE')return kind==='native-stopping'?{ok:true,status:202,json:async()=>({released:false})}:{ok:true,status:204};
       else if(url.endsWith('/mode')){modeChosen=true;body=JSON.parse(init.body)}
       else if(init.method==='POST')body={id:'b'.repeat(32)};
       else if(kind==='transport-failed')throw Error('Simulated transport error');
       else if(kind==='source-failed')body={state:'failed',source:null};
       else if(kind==='native-source-failed'&&modeChosen)body={state:'complete',native:{state:'failed',failureCode:'source-read'}};
-      else if(kind==='native-failed'&&modeChosen)body={state:'complete',native:{state:'failed'}};
+      else if((kind==='native-failed'||kind==='native-stopping')&&modeChosen)body={state:'complete',native:{state:'failed'}};
       else body={state:'preparing',source:desc};
       return {ok:true,status:200,json:async()=>body};
     };

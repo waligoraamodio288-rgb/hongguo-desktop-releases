@@ -22,6 +22,22 @@ from desktop_prefetch import EpisodePrefetcher
 
 
 class NativeTests(unittest.TestCase):
+    def test_release_retains_session_while_teardown_is_pending(self):
+        host=object.__new__(NativeHost);host.guard=threading.RLock()
+        results=iter((False,True))
+        session=SimpleNamespace(close=lambda:next(results))
+        host.sessions={'owned':session}
+        self.assertIs(host.release('owned'),False)
+        self.assertIs(host.sessions['owned'],session)
+        self.assertTrue(host.release('owned'));self.assertFalse(host.sessions)
+
+    def test_close_reports_live_thread_instead_of_acknowledging_release(self):
+        session=object.__new__(NativeSession);session.stop=threading.Event()
+        waits=[];alive=True
+        session.thread=SimpleNamespace(is_alive=lambda:alive,join=lambda timeout:waits.append(timeout))
+        self.assertFalse(session.close());self.assertTrue(session.stop.is_set());self.assertEqual(waits,[3])
+        alive=False;self.assertTrue(session.close())
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
@@ -283,6 +299,7 @@ class NativeTests(unittest.TestCase):
         player=created[0]
         self.assertEqual(player.loads,2)
         if empty_eof:
+            self.assertIn(('set','start',job.start_seconds),player.commands)
             self.assertEqual(session.data['state'],'failed')
             self.assertFalse(session.data.get('outputReady'))
             return
