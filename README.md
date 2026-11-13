@@ -1,24 +1,26 @@
 # 红果短剧｜Windows、Mac 测试版与 Android TV
 
+> **Windows 1.0.27 已发布**：改善播放取址与中断恢复，新增离线文件检查和公告横幅。[查看更新与下载](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.27)。
+
 在 Windows 电脑上找剧、接着上次看。支持搜索、收藏、本机观看进度、选集、倍速和自动连播。
 
-**由渠道有数独立维护 · 免费使用 · Windows 正式版 1.0.20**
+**由渠道有数独立维护 · 免费使用 · Windows 正式版 1.0.27**
 
-> **1.0.20 已发布：改进找剧、片单和播放操作，完善手机登录恢复与收藏操作。** 具体变化与使用边界见[正式版说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.20)；不代表所有网络、设备或剧集均可用。
+> **1.0.27 已发布：改进找剧、片单和播放操作，完善手机登录恢复与收藏操作。** 具体变化与使用边界见[正式版说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.27)；不代表所有网络、设备或剧集均可用。
 
 **[渠道有数网站](https://shiyuemenghui.top/?utm_source=github&utm_medium=readme&utm_campaign=custom_domain)** · [安装帮助](https://shiyuemenghui.top/help/install/?utm_source=github&utm_medium=readme&utm_campaign=custom_domain)
 
 网站暂有部分网络无法访问；遇到打不开时，可直接使用下方 GitHub 安装包和本页说明。
 
-**[下载 Windows 安装程序](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.20/hongguo-1.0.20-windows-x86_64-setup.exe)**　｜　[三步安装](#三步开始使用)　｜　[下载与安装说明](#下载与安装说明)　｜　[全部版本](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases)
+**[下载 Windows 安装程序](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.27/hongguo-1.0.27-windows-x86_64-setup.exe)**　｜　[三步安装](#三步开始使用)　｜　[下载与安装说明](#下载与安装说明)　｜　[全部版本](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases)
 
-Windows 10 / 11 **x64（64 位）** · 安装包 **109.4 MiB**。普通使用只需下载 `.exe`，不需要下载源码 ZIP、`.sig` 或 `latest.json`。
+Windows 10 / 11 **x64（64 位）** · 安装包 **111.6 MiB**。普通使用只需下载 `.exe`，不需要下载源码 ZIP、`.sig` 或 `latest.json`。
 
 ## 按设备选择下载
 
 | 你的设备 | 当前版本与入口 | 安装前确认 |
 | --- | --- | --- |
-| Windows 电脑 | [1.0.20 正式版 · 下载 Setup](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.20/hongguo-1.0.20-windows-x86_64-setup.exe) | Windows 10/11 x64 |
+| Windows 电脑 | [1.0.27 正式版 · 下载 Setup](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.27/hongguo-1.0.27-windows-x86_64-setup.exe) | Windows 10/11 x64 |
 | Android 电视、盒子、投影 | [0.5.9 测试版 · 选 ARM32 / ARM64](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/TV.md) | Android 5.0+，按系统架构选包 |
 | Mac | [1.0.9 beta.2 · 下载与安装说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.9-beta.2) | M 系列、macOS 14+；测试版，暂不支持 Intel |
 
