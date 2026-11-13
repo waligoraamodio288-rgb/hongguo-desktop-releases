@@ -6,8 +6,6 @@
 
 **由渠道有数独立维护 · 免费使用 · Windows 正式版 1.0.27**
 
-> **1.0.27 已发布：改进找剧、片单和播放操作，完善手机登录恢复与收藏操作。** 具体变化与使用边界见[正式版说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.27)；不代表所有网络、设备或剧集均可用。
-
 **[渠道有数网站](https://shiyuemenghui.top/?utm_source=github&utm_medium=readme&utm_campaign=custom_domain)** · [安装帮助](https://shiyuemenghui.top/help/install/?utm_source=github&utm_medium=readme&utm_campaign=custom_domain)
 
 网站暂有部分网络无法访问；遇到打不开时，可直接使用下方 GitHub 安装包和本页说明。
@@ -26,15 +24,20 @@ Windows 10 / 11 **x64（64 位）** · 安装包 **111.6 MiB**。普通使用只
 
 分享 Windows 下载请使用[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)；TV 和 Mac 请分享上方各自入口。无需关注、回帖或私信取包。
 
-## Windows 桌面版：先看演示，再选安装包
+## Windows 1.0.27：在电脑上找剧，关掉后接着看
 
-- 不用安卓模拟器，在电脑上浏览分类、搜索剧名、收藏并接着本机进度看。
+- **直接在电脑上追剧**：搜索、选集、倍速、小窗与自动连播，无需安卓模拟器。
+- **保留自己的追剧记录**：支持保存登录、本机观看进度和手机云片单入口。11 月 13 日本机实测重开后仍已登录，并从保存位置继续播放。
+- **遇到中断有恢复入口**：本版增加播放准备状态检查、手动恢复和离线文件完整性检查。
+- **更新与通知**：软件内检查更新，公告横幅提供版本说明和使用提醒。
 
-- 老板键隐藏时暂停、恢复时续播，支持倍速、选集和自动连播。
+**[下载 Windows 1.0.27 安装包](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.27/hongguo-1.0.27-windows-x86_64-setup.exe)** · **[查看更新与已知问题](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.27)** · [反馈问题](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/new?template=bug-report.yml)
 
-- 1.0.19 支持读取本人手机云片单，优化播放器全屏选集、画面适配、迷你窗和离线文件管理；具体检索及播放可用性仍受内容服务和网络影响。
+本次实测范围：Windows 已安装的 1.0.27，搜索“东北后妈”，《东北后妈，整顿全家》第 1→4→1 集 1080p 播放与切集；退出重开后从第 1 集 00:43 续播至 01:03。结果只覆盖这台电脑和这些操作，不代表全部设备或剧目。
 
-[观看 42 秒实录：老板键与 3 倍速](https://www.bilibili.com/video/BV1SbH16iECg/)（录制版本 1.0.10；黑暗模式见当前版本的设置 → 外观）。电脑与电视各自保存进度，暂不跨设备同步。
+**已知反馈（2026-11-13）**：部分 1.0.27 用户仍报告搜索失败或无法播放，见 [#1410](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/1410)、[#1411](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/1411)、[#1412](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/1412)。遇到问题请附系统、版本、剧名和集数；不要提交账号凭据。不要反复重装或删除资料来尝试解决。
+
+[观看旧版 42 秒操作演示：老板键与 3 倍速](https://www.bilibili.com/video/BV1SbH16iECg/)（录制版本 1.0.10，仅用于了解基本操作；以当前界面为准）。Windows 与 Android TV 的本机进度各自保存，TV 暂不跨设备同步。
 
 <!-- mac-beta-promotion-start -->
 ## Mac 公开测试版：邀请 M 系列用户体验
@@ -98,13 +101,17 @@ beta.2 修复原生全屏和偏好关闭交互，同一候选在 M2 上通过2�
 
 ## 旧版无法播放，先检查哪个版本？
 
-Windows 用户可先在设置里核对版本。当前正式版为 1.0.20；旧版用户请通过[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)获取当前安装包。这个修复不代表所有网络、设备或剧集都能正常播放。更新后仍失败，请按上面的“播放中断时”步骤反馈版本、屏幕提示和换剧结果。
+Windows 用户可先在设置里核对版本。当前正式版为 1.0.27；旧版用户请通过[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)获取当前安装包。这个修复不代表所有网络、设备或剧集都能正常播放。更新后仍失败，请按上面的“播放中断时”步骤反馈版本、屏幕提示和换剧结果。
 
 电视、盒子和平板请使用上方 Android TV 入口；真人剧、漫剧和 AI剧（AI 剧）分类独立，当前0.5.9提供ARM32与ARM64两种安装包。Windows 安装程序不能安装到电视。
 
 ## 版本变化与已知反馈
 
-**当前 1.0.20：** 改进发现页、搜索结果与记录、播放器选集及续看、手机登录恢复与收藏操作，并增加本地反馈草稿和公开回复查看入口。详见[1.0.20 正式版说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.20)；手机历史上传、点赞等功能尚未全部完成，内容可用性仍受网络和上游状态影响。
+**当前 1.0.27：** 改善部分播放取址与中断恢复，增加播放准备检查、手动恢复、离线文件检查和公告横幅。搜索、切集及重开续播已有本机实测；部分用户仍有搜索和播放失败反馈，详见上方已知问题与[正式版说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.27)。
+
+下方为旧版本记录，按当时状态保留，不代表当前功能缺失或当前登录行为。
+
+**1.0.20（历史）：** 改进发现页、搜索结果与记录、播放器选集及续看、手机登录恢复与收藏操作，并增加本地反馈草稿和公开回复查看入口。详见[1.0.20 正式版说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.20)；手机历史上传、点赞等功能尚未全部完成，内容可用性仍受网络和上游状态影响。
 
 **1.0.19：** 新增本人验证码登录与手机云片单只读查看；本地资料保持独立，退出应用后需要重新登录。优化收藏、历史、手机片单及离线文件的分区导航、搜索排序，以及播放器选集、画面适配和离线操作。以下旧版记录仅供追溯，不能视作当前版本说明。
 
@@ -154,11 +161,11 @@ v1.0.3 新增热播榜按需加载、播放服务未就绪时的明确提示，�
 
 当前版本尚未配置 Windows 发布者代码签名，系统可能显示未知发布者或 SmartScreen 提示。请核对下载来源与文件，不要关闭系统防护；某些系统策略可能限制安装。
 
-安装器大小：`114721284` 字节。SHA-256：
+Windows 1.0.27 安装器大小：`116992622` 字节。SHA-256：
 
 ```text
 
-84a7c613932086a1b45f7217857b1bfbc66fa1b4dfbf5a57b66731305889a77f
+63f7021d7bcb11e637cd603f2fff1c2241160f7c2f70687939762daee6bfb173
 
 ```
 
