@@ -2,6 +2,15 @@
   "app_id": "cn.guoban.desktop-companion",
   "announcements": [
     {
+      "id": "windows-release-1.0.28",
+      "title": "1.0.28 首次播放修复版",
+      "body": "修复首次播放准备时 CDN 跳转导致的文件下载失败，保留登录和观看记录。空缓存搜索、播放和切集，以及升级与回退已通过本轮样本验收。可在设置中检查更新，点击查看说明。",
+      "level": "info",
+      "publishedAt": 1794661208,
+      "expiresAt": 1795870808,
+      "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.28"
+    },
+    {
       "id": "windows-release-1.0.27",
       "title": "1.0.27 免费体验：电脑追剧，接着上次看",
       "body": "改善部分播放取址与中断恢复，新增离线文件检查。本机已实测搜索、1080p 切集与重开续播。部分环境仍有搜索、播放失败反馈，请查看版本说明中的已知问题；可在设置中检查更新。",
