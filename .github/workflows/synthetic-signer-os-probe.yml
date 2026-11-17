@@ -48,8 +48,8 @@ jobs:
             if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'Microsoft Corporation') { throw 'Unverified Microsoft diagnostic tool' }
             $receipt.debuggerSha256=(Get-FileHash $debugger).Hash.ToLowerInvariant()
             $receipt.debuggerSignature=$signature.Status.ToString()
-            # Only the child Java is denied non-loopback outbound traffic. No system-wide policy changes.
-            New-NetFirewallRule -DisplayName 'Hongguo synthetic signer egress guard' -Direction Outbound -Action Block -Program $java -RemoteAddress '0.0.0.0-126.255.255.255','128.0.0.0-255.255.255.255','::/0' | Out-Null
+            # CLI signing needs no socket; block all outbound traffic for this child only.
+            New-NetFirewallRule -DisplayName 'Hongguo synthetic signer egress guard' -Direction Outbound -Action Block -Program $java | Out-Null
             $dumpRoot=Join-Path $outRoot 'dump'
             $tempNative=Join-Path $probeRoot 'native-temp'
             New-Item -ItemType Directory -Path $dumpRoot,$tempNative | Out-Null
