@@ -1,0 +1,89 @@
+name: Bounded synthetic signer OS comparison
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2025, windows-11-arm]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    steps:
+      - name: One synthetic signature with original public runtime
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $probeRoot = Join-Path $env:RUNNER_TEMP 'hongguo-synthetic-signer'
+          $outRoot = Join-Path $env:GITHUB_WORKSPACE 'signer-evidence'
+          New-Item -ItemType Directory -Path $probeRoot,$outRoot -Force | Out-Null
+          $receipt = [ordered]@{scope='one synthetic signing operation; no account or upstream request'; stage='setup'; platform=$env:RUNNER_ARCH; os=(Get-CimInstance Win32_OperatingSystem | Select-Object Caption,Version,BuildNumber); productChanged=$false; accountAccess=$false; requestCount=0}
+          function Save-Receipt { $receipt | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $outRoot 'result.json') -Encoding utf8 }
+          Save-Receipt
+          try {
+            $installer = Join-Path $probeRoot 'verified-setup.exe'
+            Invoke-WebRequest 'https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.35/hongguo-1.0.35-windows-x86_64-setup.exe' -OutFile $installer
+            if ((Get-FileHash $installer -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'f1652a5d564890a97532389a5e532c2f71d9e7e80df439527c29c2be38025e88') { throw 'Installer hash mismatch' }
+            $extract = Join-Path $probeRoot 'extracted'
+            & 7z x $installer "-o$extract" 'backend\sign\*' 'backend\capture\fq_oversea\*' 'backend\jre\*' -y *> (Join-Path $outRoot 'extract.log')
+            if ($LASTEXITCODE -ne 0) { throw '7z extraction failed' }
+            $jar = @(Get-ChildItem $extract -Recurse -File -Filter unidbg-sign.jar)
+            if ($jar.Count -ne 1) { throw 'Expected exactly one signer jar' }
+            if ((Get-FileHash $jar[0].FullName).Hash.ToLowerInvariant() -ne '03b6984d56682fbde0d941ca3ae7177260189a3c9da4a18732d1bae064bb1ecd') { throw 'Signer jar mismatch' }
+            $backend = $jar[0].Directory.Parent.FullName
+            $java = Join-Path $backend 'jre\bin\java.exe'
+            if (!(Test-Path -LiteralPath $java)) { throw 'Bundled x64 Java missing' }
+            $receipt.javaSha256=(Get-FileHash $java).Hash.ToLowerInvariant()
+            $receipt.javaVersion=(Get-Item $java).VersionInfo.FileVersion
+            $receipt.crt=(Get-Item "$env:WINDIR\System32\msvcrt.dll").VersionInfo.FileVersion
+            $receipt.crtSha256=(Get-FileHash "$env:WINDIR\System32\msvcrt.dll").Hash.ToLowerInvariant()
+            $procZip=Join-Path $probeRoot 'procdump.zip'
+            Invoke-WebRequest 'https://download.sysinternals.com/files/Procdump.zip' -OutFile $procZip
+            Expand-Archive -LiteralPath $procZip -DestinationPath (Join-Path $probeRoot 'procdump')
+            $debugger=Join-Path $probeRoot 'procdump\procdump64.exe'
+            if ($env:RUNNER_ARCH -eq 'ARM64') { $debugger=Join-Path $probeRoot 'procdump\procdump64a.exe' }
+            $signature=Get-AuthenticodeSignature $debugger
+            if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'Microsoft Corporation') { throw 'Unverified Microsoft diagnostic tool' }
+            $receipt.debuggerSha256=(Get-FileHash $debugger).Hash.ToLowerInvariant()
+            $receipt.debuggerSignature=$signature.Status.ToString()
+            # Only the child Java is denied non-loopback outbound traffic. No system-wide policy changes.
+            New-NetFirewallRule -DisplayName 'Hongguo synthetic signer egress guard' -Direction Outbound -Action Block -Program $java -RemoteAddress '0.0.0.0-126.255.255.255','128.0.0.0-255.255.255.255','::/0' | Out-Null
+            $dumpRoot=Join-Path $outRoot 'dump'
+            $tempNative=Join-Path $probeRoot 'native-temp'
+            New-Item -ItemType Directory -Path $dumpRoot,$tempNative | Out-Null
+            $receipt.stage='executing-one-synthetic-signature'; $receipt.requestCount=1; Save-Receipt
+            # The URL is input data for a local signature only; no remote application call.
+            $javaArgs=@('-Djava.net.preferIPv4Stack=true',"-Djava.io.tmpdir=$tempNative",'--add-opens','java.base/java.lang=ALL-UNNAMED','-Xmx512m','-XX:+ExitOnOutOfMemoryError','-cp','unidbg-sign.jar','com.hongguo.sign.FqTrace','https://api5-normal-sinfonlinea.fqnovel.com/reading/bookapi/search/tab/v?aid=8662&app_name=novelread&version_code=72232&device_platform=android','user-agent\r\nhongguo-synthetic-crash-probe/1.0')
+            $log=Join-Path $outRoot 'probe.log'
+            # Invocation uses an argument array. Only a disposable synthetic process is debugged.
+            $debugArgs=@('-accepteula','-e','-n','1','-x',$dumpRoot,$java)+$javaArgs
+            $quoted=($debugArgs | ForEach-Object { '"'+$_.Replace('"','\"')+'"' }) -join ' '
+            $child=Start-Process -FilePath $debugger -ArgumentList $quoted -WorkingDirectory $jar[0].Directory.FullName -WindowStyle Hidden -RedirectStandardOutput $log -RedirectStandardError (Join-Path $outRoot 'debugger-stderr.log') -PassThru
+            $receipt.debuggerPid=$child.Id
+            $receipt.timedOut=!$child.WaitForExit(120000)
+            if ($receipt.timedOut) {
+              Get-CimInstance Win32_Process -Filter "Name='java.exe'" | Where-Object ExecutablePath -EQ $java | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+              if (!$child.WaitForExit(10000)) { Stop-Process -Id $child.Id -Force }
+            }
+            $child.WaitForExit(); $receipt.debuggerExitCode=$child.ExitCode
+            $raw=[IO.File]::ReadAllText($log)
+            $receipt.signatureMarkers=($raw.Contains('===SIG_START===') -and $raw.Contains('===SIG_END==='))
+            $receipt.fastfailObserved=($raw -match '(?i)c0000409')
+            $receipt.loadedNative=@(Get-ChildItem $tempNative -Recurse -File -Filter '*.dll' | ForEach-Object { @{name=$_.Name; bytes=$_.Length; sha256=(Get-FileHash $_.FullName).Hash.ToLowerInvariant()} })
+            $receipt.dumps=@(Get-ChildItem $dumpRoot -File | ForEach-Object { @{name=$_.Name;bytes=$_.Length;sha256=(Get-FileHash $_.FullName).Hash.ToLowerInvariant()} })
+            # Signature values for synthetic input are unnecessary to retain.
+            $raw=[regex]::Replace($raw,'(?s)(===SIG_START===).*?(===SIG_END===)','$1 [synthetic signature omitted] $2')
+            [IO.File]::WriteAllText($log,$raw)
+            $receipt.stage='completed'
+          } catch { $receipt.stage='failed'; $receipt.error=$_.Exception.Message; throw }
+          finally { Save-Receipt; Get-Content (Join-Path $outRoot 'result.json') }
+      - name: Retain bounded synthetic evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: signer-${{ matrix.os }}
+          path: signer-evidence/
+          retention-days: 3
+          if-no-files-found: error
