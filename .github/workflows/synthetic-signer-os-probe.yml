@@ -23,7 +23,7 @@ jobs:
           git -C upstream checkout -q FETCH_HEAD
           git clone --depth 1 --branch 2.1.4 https://github.com/unicorn-engine/unicorn.git engine
           test "$(git -C engine rev-parse HEAD)" = 8028ec436f2d9376525352dd38ed9ed6b9f6be10
-          git -C engine apply ../upstream/backend/unicorn2/src/main/native/patches/*.patch
+          git -C engine apply "$PWD"/upstream/backend/unicorn2/src/main/native/patches/*.patch
           python3 - <<'PY'
           from pathlib import Path
           p=Path('engine/qemu/include/sysemu/os-win32.h');s=p.read_text()
