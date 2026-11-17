@@ -1,10 +1,77 @@
-name: Bounded synthetic signer OS comparison
+name: Experimental guarded signer engine
 on:
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Build source-isolated nonlocal return experiment
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 mingw-w64-x86-64-dev cmake make
+          mkdir upstream
+          git -C upstream init -q
+          git -C upstream remote add origin https://github.com/zhkl0228/unidbg.git
+          git -C upstream sparse-checkout init --cone
+          git -C upstream sparse-checkout set backend/unicorn2/src/main/native
+          git -C upstream fetch --depth 1 --filter=blob:none origin cb848be15386efb96336ef1d5a1422fc823a01cd
+          git -C upstream checkout -q FETCH_HEAD
+          git clone --depth 1 --branch 2.1.4 https://github.com/unicorn-engine/unicorn.git engine
+          test "$(git -C engine rev-parse HEAD)" = 8028ec436f2d9376525352dd38ed9ed6b9f6be10
+          git -C engine apply ../upstream/backend/unicorn2/src/main/native/patches/*.patch
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('engine/qemu/include/sysemu/os-win32.h');s=p.read_text()
+          # Literal replacement is intentionally restricted to the three portable aliases.
+          old='\n'.join(['#define sigjmp_buf jmp_buf','#define sigsetjmp(env, savemask) setjmp(env)','#define siglongjmp(env, val) longjmp(env, val)']).replace('\\n','\n')
+          old=old.replace('\n','\n')
+          assert s.count(old)==1
+          new='''#if defined(_WIN64) && defined(__GNUC__) && !defined(_MSC_VER)
+          /* Experimental GCC-owned nonlocal return for translated ARM execution.
+           * Avoid mixing the system CRT's CFG-validated jmp_buf with JIT frames.
+           * This does not alter process mitigations or normal C runtime setjmp users.
+           */
+          typedef intptr_t unicorn_builtin_jmp_buf[5];
+          #define sigjmp_buf unicorn_builtin_jmp_buf
+          #define sigsetjmp(env, savemask) __builtin_setjmp((intptr_t *)(env))
+          #define siglongjmp(env, val) do { if ((val) != 1) abort(); __builtin_longjmp((intptr_t *)(env), 1); } while (0)
+          #else
+          '''+old+'''
+          #endif'''
+          p.write_text(s.replace(old,new))
+          PY
+          cmake -S engine -B engine/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../cmake/mingw-w64.cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON '-DUNICORN_ARCH=arm;aarch64' -DUNICORN_BUILD_TESTS=OFF
+          cmake --build engine/build --target unicorn_archive -j4
+          mkdir -p result/win-jni
+          cat > result/win-jni/jni_md.h <<'HEADER'
+          #ifndef _JAVASOFT_JNI_MD_H_
+          #define _JAVASOFT_JNI_MD_H_
+          #define JNIEXPORT __declspec(dllexport)
+          #define JNIIMPORT __declspec(dllimport)
+          #define JNICALL __stdcall
+          typedef long jint;
+          typedef long long jlong;
+          typedef signed char jbyte;
+          #endif
+          HEADER
+          native=upstream/backend/unicorn2/src/main/native
+          x86_64-w64-mingw32-gcc -shared -O3 -static -DNDEBUG -I engine/include -I "$JAVA_HOME/include" -I result/win-jni "$native/unicorn.c" "$native/sample_arm.c" "$native/sample_arm64.c" engine/build/libunicorn.a -lws2_32 -lpthread -o result/unicorn.dll
+          git -C engine diff > result/engine.patch
+          printf 'unidbg=cb848be15386efb96336ef1d5a1422fc823a01cd\nunicorn=8028ec436f2d9376525352dd38ed9ed6b9f6be10\n' > result/provenance.txt
+          x86_64-w64-mingw32-gcc --version >> result/provenance.txt
+          sha256sum result/unicorn.dll >> result/provenance.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: experimental-unicorn
+          path: result/
+          retention-days: 3
   probe:
+    needs: build
     strategy:
       fail-fast: false
       matrix:
@@ -12,7 +79,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 12
     steps:
-      - name: One synthetic signature with original public runtime
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: experimental-unicorn
+          path: native-candidate
+      - name: Verify original public runtime
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -39,51 +110,42 @@ jobs:
             $receipt.javaVersion=(Get-Item $java).VersionInfo.FileVersion
             $receipt.crt=(Get-Item "$env:WINDIR\System32\msvcrt.dll").VersionInfo.FileVersion
             $receipt.crtSha256=(Get-FileHash "$env:WINDIR\System32\msvcrt.dll").Hash.ToLowerInvariant()
-            $procZip=Join-Path $probeRoot 'procdump.zip'
-            Invoke-WebRequest 'https://download.sysinternals.com/files/Procdump.zip' -OutFile $procZip
-            Expand-Archive -LiteralPath $procZip -DestinationPath (Join-Path $probeRoot 'procdump')
-            $debugger=Join-Path $probeRoot 'procdump\procdump64.exe'
-            if ($env:RUNNER_ARCH -eq 'ARM64') { $debugger=Join-Path $probeRoot 'procdump\procdump64a.exe' }
-            $signature=Get-AuthenticodeSignature $debugger
-            if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'Microsoft Corporation') { throw 'Unverified Microsoft diagnostic tool' }
-            $receipt.debuggerSha256=(Get-FileHash $debugger).Hash.ToLowerInvariant()
-            $receipt.debuggerSignature=$signature.Status.ToString()
-            # CLI signing needs no socket; block all outbound traffic for this child only.
-            New-NetFirewallRule -DisplayName 'Hongguo synthetic signer egress guard' -Direction Outbound -Action Block -Program $java | Out-Null
-            $dumpRoot=Join-Path $outRoot 'dump'
-            $tempNative=Join-Path $probeRoot 'native-temp'
-            New-Item -ItemType Directory -Path $dumpRoot,$tempNative | Out-Null
-            $receipt.stage='executing-one-synthetic-signature'; $receipt.requestCount=1; Save-Receipt
-            # The URL is input data for a local signature only; no remote application call.
-            $javaArgs=@('-Djava.net.preferIPv4Stack=true',"-Djava.io.tmpdir=$tempNative",'--add-opens','java.base/java.lang=ALL-UNNAMED','-Xmx512m','-XX:+ExitOnOutOfMemoryError','-cp','unidbg-sign.jar','com.hongguo.sign.FqTrace','https://api5-normal-sinfonlinea.fqnovel.com/reading/bookapi/search/tab/v?aid=8662&app_name=novelread&version_code=72232&device_platform=android','user-agent\r\nhongguo-synthetic-crash-probe/1.0')
-            $log=Join-Path $outRoot 'probe.log'
-            # Invocation uses an argument array. Only a disposable synthetic process is debugged.
-            $debugArgs=@('-accepteula','-e','-n','1','-x',$dumpRoot,$java)+$javaArgs
-            $quoted=($debugArgs | ForEach-Object { '"'+$_.Replace('"','\"')+'"' }) -join ' '
-            $child=Start-Process -FilePath $debugger -ArgumentList $quoted -WorkingDirectory $jar[0].Directory.FullName -WindowStyle Hidden -RedirectStandardOutput $log -RedirectStandardError (Join-Path $outRoot 'debugger-stderr.log') -PassThru
-            $receipt.debuggerPid=$child.Id
-            $receipt.timedOut=!$child.WaitForExit(120000)
-            if ($receipt.timedOut) {
-              Get-CimInstance Win32_Process -Filter "Name='java.exe'" | Where-Object ExecutablePath -EQ $java | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
-              if (!$child.WaitForExit(10000)) { Stop-Process -Id $child.Id -Force }
-            }
-            $child.WaitForExit(); $receipt.debuggerExitCode=$child.ExitCode
-            $raw=[IO.File]::ReadAllText($log)
-            $receipt.signatureMarkers=($raw.Contains('===SIG_START===') -and $raw.Contains('===SIG_END==='))
-            $receipt.fastfailObserved=($raw -match '(?i)c0000409')
-            $receipt.loadedNative=@(Get-ChildItem $tempNative -Recurse -File -Filter '*.dll' | ForEach-Object { @{name=$_.Name; bytes=$_.Length; sha256=(Get-FileHash $_.FullName).Hash.ToLowerInvariant()} })
-            $receipt.dumps=@(Get-ChildItem $dumpRoot -File | ForEach-Object { @{name=$_.Name;bytes=$_.Length;sha256=(Get-FileHash $_.FullName).Hash.ToLowerInvariant()} })
-            # Signature values for synthetic input are unnecessary to retain.
-            $raw=[regex]::Replace($raw,'(?s)(===SIG_START===).*?(===SIG_END===)','$1 [synthetic signature omitted] $2')
-            [IO.File]::WriteAllText($log,$raw)
-            $receipt.stage='completed'
-          } catch { $receipt.stage='failed'; $receipt.error=$_.Exception.Message; throw }
-          finally { Save-Receipt; Get-Content (Join-Path $outRoot 'result.json') }
-      - name: Retain bounded synthetic evidence
+          
+            $receipt.stage='runtime-extracted'; Save-Receipt
+            "PROBE_BACKEND=$backend" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          } finally { Save-Receipt }
+      - name: Prepare synthetic differential harness
+        shell: python
+        run: |
+          import os,json,base64,zipfile,copy,hashlib
+          from pathlib import Path
+          p=json.loads('{"classes": {"SignerControlFlowProbe$1.class": "yv66vgAAAD0ASgkAAgADBwAEDAAFAAYBABhTaWduZXJDb250cm9sRmxvd1Byb2JlJDEBAAl2YWwkY291bnQBAAJbSQoACAAJBwAKDAALAAwBABBqYXZhL2xhbmcvT2JqZWN0AQAGPGluaXQ+AQADKClWCQACAA4MAA8AEAEABmhhbmRsZQEAJkxjb20vZ2l0aHViL3VuaWRiZy9hcm0vYmFja2VuZC9Vbkhvb2s7CwASABMHABQMABUADAEAJGNvbS9naXRodWIvdW5pZGJnL2FybS9iYWNrZW5kL1VuSG9vawEABnVuaG9vawkAFwAYBwAZDAAaABsBABBqYXZhL2xhbmcvU3lzdGVtAQADb3V0AQAVTGphdmEvaW8vUHJpbnRTdHJlYW07EgAAAB0MAB4AHwEAF21ha2VDb25jYXRXaXRoQ29uc3RhbnRzAQAVKEkpTGphdmEvbGFuZy9TdHJpbmc7CgAhACIHACMMACQAJQEAE2phdmEvaW8vUHJpbnRTdHJlYW0BAAdwcmludGxuAQAVKExqYXZhL2xhbmcvU3RyaW5nOylWBwAnAQAmY29tL2dpdGh1Yi91bmlkYmcvYXJtL2JhY2tlbmQvQ29kZUhvb2sBAAUoW0kpVgEABENvZGUBAA9MaW5lTnVtYmVyVGFibGUBAAlTaWduYXR1cmUBAAhvbkF0dGFjaAEAKShMY29tL2dpdGh1Yi91bmlkYmcvYXJtL2JhY2tlbmQvVW5Ib29rOylWAQAGZGV0YWNoAQANU3RhY2tNYXBUYWJsZQEABGhvb2sBAD4oTGNvbS9naXRodWIvdW5pZGJnL2FybS9iYWNrZW5kL0JhY2tlbmQ7SklMamF2YS9sYW5nL09iamVjdDspVgEAClNvdXJjZUZpbGUBABtTaWduZXJDb250cm9sRmxvd1Byb2JlLmphdmEBAA9FbmNsb3NpbmdNZXRob2QHADYBABZTaWduZXJDb250cm9sRmxvd1Byb2JlDAA4ADkBAARtYWluAQAWKFtMamF2YS9sYW5nL1N0cmluZzspVgEACE5lc3RIb3N0AQAQQm9vdHN0cmFwTWV0aG9kcw8GAD0KAD4APwcAQAwAHgBBAQAkamF2YS9sYW5nL2ludm9rZS9TdHJpbmdDb25jYXRGYWN0b3J5AQCYKExqYXZhL2xhbmcvaW52b2tlL01ldGhvZEhhbmRsZXMkTG9va3VwO0xqYXZhL2xhbmcvU3RyaW5nO0xqYXZhL2xhbmcvaW52b2tlL01ldGhvZFR5cGU7TGphdmEvbGFuZy9TdHJpbmc7W0xqYXZhL2xhbmcvT2JqZWN0OylMamF2YS9sYW5nL2ludm9rZS9DYWxsU2l0ZTsIAEMBAApDQUxMQkFDSz0BAQAMSW5uZXJDbGFzc2VzBwBGAQAlamF2YS9sYW5nL2ludm9rZS9NZXRob2RIYW5kbGVzJExvb2t1cAcASAEAHmphdmEvbGFuZy9pbnZva2UvTWV0aG9kSGFuZGxlcwEABkxvb2t1cAAgAAIACAABACYAAgAAAA8AEAAAEBAABQAGAAAABAAAAAsAKAACACkAAAAiAAIAAgAAAAoqK7UAASq3AAexAAAAAQAqAAAABgABAAAAJwArAAAAAgAMAAEALAAtAAEAKQAAAB4AAgACAAAABiortQANsQAAAAEAKgAAAAYAAQAAACkAAQAuAAwAAQApAAAAMgABAAEAAAARKrQADcYADCq0AA25ABEBALEAAAACACoAAAAGAAEAAAAqAC8AAAADAAEQAAEAMAAxAAEAKQAAADQABAAGAAAAHCq0AAEDXC4EYE+yABYqtAABAy66ABwAALYAILEAAAABACoAAAAGAAEAAAArAAUAMgAAAAIAMwA0AAAABAA1ADcAOgAAAAIANQA7AAAACAABADwAAQBCAEQAAAASAAIAAgAAAAAAAABFAEcASQAZ", "SignerControlFlowProbe$Kernel.class": "yv66vgAAAD0AIggAAgEACGtlcm5lbDMyBwAEAQAdU2lnbmVyQ29udHJvbEZsb3dQcm9iZSRLZXJuZWwKAAYABwcACAwACQAKAQASY29tL3N1bi9qbmEvTmF0aXZlAQAEbG9hZAEAOihMamF2YS9sYW5nL1N0cmluZztMamF2YS9sYW5nL0NsYXNzOylMY29tL3N1bi9qbmEvTGlicmFyeTsJAAMADAwADQAOAQADQVBJAQAfTFNpZ25lckNvbnRyb2xGbG93UHJvYmUkS2VybmVsOwcAEAEAEGphdmEvbGFuZy9PYmplY3QHABIBABNjb20vc3VuL2puYS9MaWJyYXJ5AQAaR2V0UHJvY2Vzc01pdGlnYXRpb25Qb2xpY3kBAC8oTGNvbS9zdW4vam5hL1BvaW50ZXI7SUxjb20vc3VuL2puYS9Qb2ludGVyO0kpWgEAEEdldE1vZHVsZUhhbmRsZVcBACwoTGNvbS9zdW4vam5hL1dTdHJpbmc7KUxjb20vc3VuL2puYS9Qb2ludGVyOwEACDxjbGluaXQ+AQADKClWAQAEQ29kZQEAD0xpbmVOdW1iZXJUYWJsZQEAClNvdXJjZUZpbGUBABtTaWduZXJDb250cm9sRmxvd1Byb2JlLmphdmEBAAhOZXN0SG9zdAcAHwEAFlNpZ25lckNvbnRyb2xGbG93UHJvYmUBAAxJbm5lckNsYXNzZXMBAAZLZXJuZWwGAQADAA8AAQARAAEAGQANAA4AAAADBAEAEwAUAAAEAQAVABYAAAAIABcAGAABABkAAAAmAAIAAAAAAA4SARIDuAAFwAADswALsQAAAAEAGgAAAAYAAQAAAAkAAwAbAAAAAgAcAB0AAAACAB4AIAAAAAoAAQADAB4AIQYJ", "SignerControlFlowProbe$MemoryApi.class": "yv66vgAAAD0AIAgAAgEACmtlcm5lbGJhc2UHAAQBACBTaWduZXJDb250cm9sRmxvd1Byb2JlJE1lbW9yeUFwaQoABgAHBwAIDAAJAAoBABJjb20vc3VuL2puYS9OYXRpdmUBAARsb2FkAQA6KExqYXZhL2xhbmcvU3RyaW5nO0xqYXZhL2xhbmcvQ2xhc3M7KUxjb20vc3VuL2puYS9MaWJyYXJ5OwkAAwAMDAANAA4BAANBUEkBACJMU2lnbmVyQ29udHJvbEZsb3dQcm9iZSRNZW1vcnlBcGk7BwAQAQAQamF2YS9sYW5nL09iamVjdAcAEgEAE2NvbS9zdW4vam5hL0xpYnJhcnkBABpTZXRQcm9jZXNzVmFsaWRDYWxsVGFyZ2V0cwEARChMY29tL3N1bi9qbmEvUG9pbnRlcjtMY29tL3N1bi9qbmEvUG9pbnRlcjtKSUxjb20vc3VuL2puYS9Qb2ludGVyOylaAQAIPGNsaW5pdD4BAAMoKVYBAARDb2RlAQAPTGluZU51bWJlclRhYmxlAQAKU291cmNlRmlsZQEAG1NpZ25lckNvbnRyb2xGbG93UHJvYmUuamF2YQEACE5lc3RIb3N0BwAdAQAWU2lnbmVyQ29udHJvbEZsb3dQcm9iZQEADElubmVyQ2xhc3NlcwEACU1lbW9yeUFwaQYBAAMADwABABEAAQAZAA0ADgAAAAIEAQATABQAAAAIABUAFgABABcAAAAmAAIAAAAAAA4SARIDuAAFwAADswALsQAAAAEAGAAAAAYAAQAAAA4AAwAZAAAAAgAaABsAAAACABwAHgAAAAoAAQADABwAHwYJ", "SignerControlFlowProbe.class": "yv66vgAAAD0BDAoAAgADBwAEDAAFAAYBABBqYXZhL2xhbmcvT2JqZWN0AQAGPGluaXQ+AQADKClWBwAIAQASY29tL3N1bi9qbmEvTWVtb3J5BQAAAAAAAAAECgAHAAwMAAUADQEABChKKVYKAAcADwwAEAAGAQAFY2xlYXIJABIAEwcAFAwAFQAWAQAdU2lnbmVyQ29udHJvbEZsb3dQcm9iZSRLZXJuZWwBAANBUEkBAB9MU2lnbmVyQ29udHJvbEZsb3dQcm9iZSRLZXJuZWw7CgAYABkHABoMABsAHAEAE2NvbS9zdW4vam5hL1BvaW50ZXIBAA5jcmVhdGVDb25zdGFudAEAGChJKUxjb20vc3VuL2puYS9Qb2ludGVyOwsAEgAeDAAfACABABpHZXRQcm9jZXNzTWl0aWdhdGlvblBvbGljeQEALyhMY29tL3N1bi9qbmEvUG9pbnRlcjtJTGNvbS9zdW4vam5hL1BvaW50ZXI7SSlaCQAiACMHACQMACUAJgEAEGphdmEvbGFuZy9TeXN0ZW0BAANvdXQBABVMamF2YS9pby9QcmludFN0cmVhbTsKAAcAKAwAKQAqAQAGZ2V0SW50AQAEKEopSQoALAAtBwAuDAAvADABABFqYXZhL2xhbmcvSW50ZWdlcgEAEHRvVW5zaWduZWRTdHJpbmcBABUoSSlMamF2YS9sYW5nL1N0cmluZzsSAAAAMgwAMwA0AQAXbWFrZUNvbmNhdFdpdGhDb25zdGFudHMBACcoWkxqYXZhL2xhbmcvU3RyaW5nOylMamF2YS9sYW5nL1N0cmluZzsKADYANwcAOAwAOQA6AQATamF2YS9pby9QcmludFN0cmVhbQEAB3ByaW50bG4BABUoTGphdmEvbGFuZy9TdHJpbmc7KVYKADwAPQcAPgwAPwBAAQA2Y29tL2dpdGh1Yi91bmlkYmcvbGludXgvYW5kcm9pZC9BbmRyb2lkRW11bGF0b3JCdWlsZGVyAQAIZm9yNjRCaXQBADooKUxjb20vZ2l0aHViL3VuaWRiZy9saW51eC9hbmRyb2lkL0FuZHJvaWRFbXVsYXRvckJ1aWxkZXI7BwBCAQAtY29tL2dpdGh1Yi91bmlkYmcvYXJtL2JhY2tlbmQvVW5pY29ybjJGYWN0b3J5CgBBAEQMAAUARQEABChaKVYKADwARwwASABJAQARYWRkQmFja2VuZEZhY3RvcnkBAFMoTGNvbS9naXRodWIvdW5pZGJnL2FybS9iYWNrZW5kL0JhY2tlbmRGYWN0b3J5OylMY29tL2dpdGh1Yi91bmlkYmcvRW11bGF0b3JCdWlsZGVyOwgASwEAHWhvbmdndW8uc3ludGhldGljLmNvbnRyb2xmbG93CgBNAE4HAE8MAFAAUQEAIWNvbS9naXRodWIvdW5pZGJnL0VtdWxhdG9yQnVpbGRlcgEADnNldFByb2Nlc3NOYW1lAQA3KExqYXZhL2xhbmcvU3RyaW5nOylMY29tL2dpdGh1Yi91bmlkYmcvRW11bGF0b3JCdWlsZGVyOwoATQBTDABUAFUBAAVidWlsZAEAJSgpTGNvbS9naXRodWIvdW5pZGJnL2FybS9BUk1FbXVsYXRvcjsHAFcBACFjb20vZ2l0aHViL3VuaWRiZy9BbmRyb2lkRW11bGF0b3ILAFYAWQwAWgBbAQAKZ2V0QmFja2VuZAEAKSgpTGNvbS9naXRodWIvdW5pZGJnL2FybS9iYWNrZW5kL0JhY2tlbmQ7CgACAF0MAF4AXwEACGdldENsYXNzAQATKClMamF2YS9sYW5nL0NsYXNzOwoAYQBiBwBjDABkAGUBAA9qYXZhL2xhbmcvQ2xhc3MBAAdnZXROYW1lAQAUKClMamF2YS9sYW5nL1N0cmluZzsSAAEAZwwAMwBoAQAmKExqYXZhL2xhbmcvU3RyaW5nOylMamF2YS9sYW5nL1N0cmluZzsIAGoBABByZWdpc3Rlci10YXJnZXRzCgBsAG0HAG4MAG8AcAEAEGphdmEvbGFuZy9TdHJpbmcBAAZlcXVhbHMBABUoTGphdmEvbGFuZy9PYmplY3Q7KVoHAHIBABNjb20vc3VuL2puYS9XU3RyaW5nCAB0AQALdW5pY29ybi5kbGwKAHEAdgwABQA6CwASAHgMAHkAegEAEEdldE1vZHVsZUhhbmRsZVcBACwoTGNvbS9zdW4vam5hL1dTdHJpbmc7KUxjb20vc3VuL2puYS9Qb2ludGVyOwcAfAEAGGphdmEvbGFuZy9Bc3NlcnRpb25FcnJvcggAfgEAHkV4cGVjdGVkIG5hdGl2ZSBtb2R1bGUgbWlzc2luZwoAewCADAAFAIEBABUoTGphdmEvbGFuZy9PYmplY3Q7KVYFAAAAAAACoxYFAAAAAAADaf8FAAAAAAAJnaYFAAAAAAAKZJ8FAAAAAAAnpscFAAAAAAAAABAFAAAAAAAAD/8F//////////AKAAcAkwwAlACVAQAHc2V0TG9uZwEABShKSilWBQAAAAAAAAAICQCZAJoHAJsMABUAnAEAIFNpZ25lckNvbnRyb2xGbG93UHJvYmUkTWVtb3J5QXBpAQAiTFNpZ25lckNvbnRyb2xGbG93UHJvYmUkTWVtb3J5QXBpOwX////////wAAoAGACgDAChAKIBAAVzaGFyZQEAGChKKUxjb20vc3VuL2puYS9Qb2ludGVyOwUAAAAAAAAQAAsAmQCmDACnAKgBABpTZXRQcm9jZXNzVmFsaWRDYWxsVGFyZ2V0cwEARChMY29tL3N1bi9qbmEvUG9pbnRlcjtMY29tL3N1bi9qbmEvUG9pbnRlcjtKSUxjb20vc3VuL2puYS9Qb2ludGVyOylaCgCqAKsHAKwMAK0ArgEADmphdmEvbGFuZy9Mb25nAQALdG9IZXhTdHJpbmcBABUoSilMamF2YS9sYW5nL1N0cmluZzsKALAAsQcAsgwAswC0AQASY29tL3N1bi9qbmEvTmF0aXZlAQAMZ2V0TGFzdEVycm9yAQADKClJEgACALYMADMAtwEAKChMamF2YS9sYW5nL1N0cmluZztaSSlMamF2YS9sYW5nL1N0cmluZzsIALkBACBDRkcgdGFyZ2V0IHJlZ2lzdHJhdGlvbiByZWplY3RlZAUAAAAAAAEAAAsAvQC+BwC/DADAAMEBACVjb20vZ2l0aHViL3VuaWRiZy9hcm0vYmFja2VuZC9CYWNrZW5kAQAHbWVtX21hcAEABihKSkkpVgsAvQDDDADEAMUBAAltZW1fd3JpdGUBAAYoSltCKVYHAMcBABhTaWduZXJDb250cm9sRmxvd1Byb2JlJDEKAMYAyQwABQDKAQAFKFtJKVYFAAAAAAAAAAwLAL0AzgwAzwDQAQAMaG9va19hZGRfbmV3AQA/KExjb20vZ2l0aHViL3VuaWRiZy9hcm0vYmFja2VuZC9Db2RlSG9vaztKSkxqYXZhL2xhbmcvT2JqZWN0OylWCwC9ANIMANMA1AEACWVtdV9zdGFydAEAByhKSkpKKVYIANYBABlVbmV4cGVjdGVkIGNhbGxiYWNrIGNvdW50CADYAQAXRU1VTEFUSU9OX1JFVFVSTkVEPXRydWULAFYA2gwA2wAGAQAFY2xvc2UHAN0BABNqYXZhL2xhbmcvVGhyb3dhYmxlCgDcAN8MAOAA4QEADWFkZFN1cHByZXNzZWQBABgoTGphdmEvbGFuZy9UaHJvd2FibGU7KVYIAOMBAAtDTE9TRUQ9dHJ1ZQcA5QEAFlNpZ25lckNvbnRyb2xGbG93UHJvYmUBAARDb2RlAQAPTGluZU51bWJlclRhYmxlAQAEbWFpbgEAFihbTGphdmEvbGFuZy9TdHJpbmc7KVYBAA1TdGFja01hcFRhYmxlBwDsAQATW0xqYXZhL2xhbmcvU3RyaW5nOwcA7gEAAltKBwDwAQACW0kBAApFeGNlcHRpb25zBwDzAQATamF2YS9sYW5nL0V4Y2VwdGlvbgEAClNvdXJjZUZpbGUBABtTaWduZXJDb250cm9sRmxvd1Byb2JlLmphdmEBAAtOZXN0TWVtYmVycwEAEEJvb3RzdHJhcE1ldGhvZHMPBgD5CgD6APsHAPwMADMA/QEAJGphdmEvbGFuZy9pbnZva2UvU3RyaW5nQ29uY2F0RmFjdG9yeQEAmChMamF2YS9sYW5nL2ludm9rZS9NZXRob2RIYW5kbGVzJExvb2t1cDtMamF2YS9sYW5nL1N0cmluZztMamF2YS9sYW5nL2ludm9rZS9NZXRob2RUeXBlO0xqYXZhL2xhbmcvU3RyaW5nO1tMamF2YS9sYW5nL09iamVjdDspTGphdmEvbGFuZy9pbnZva2UvQ2FsbFNpdGU7CAD/AQASQ0ZHX1JFQUQ9ASBGTEFHUz0BCAEBAQAIRU5HSU5FPQEIAQMBABdSRUdJU1RFUj0BIE9LPQEgRVJST1I9AQEADElubmVyQ2xhc3NlcwEABktlcm5lbAEACU1lbW9yeUFwaQcBCAEAJWphdmEvbGFuZy9pbnZva2UvTWV0aG9kSGFuZGxlcyRMb29rdXAHAQoBAB5qYXZhL2xhbmcvaW52b2tlL01ldGhvZEhhbmRsZXMBAAZMb29rdXAAIQDkAAIAAAAAAAIAAQAFAAYAAQDmAAAAHQABAAEAAAAFKrcAAbEAAAABAOcAAAAGAAEAAAAHAAkA6ADpAAIA5gAAAyQACQANAAACILsAB1kUAAm3AAtMK7YADrIAEQK4ABcQBysHuQAdBQA9sgAhHCsJtgAnuAArugAxAAC2ADW4ADu7AEFZBLcAQ7YARhJKtgBMtgBSwABWTi25AFgBADoEsgAhGQS2AFy2AGC6AGYAALYANSq+BKAA1yoDMhJptgBrmQDMsgARuwBxWRJztwB1uQB3AgA6BRkFxwANuwB7WRJ9twB/vwi8C1kDFACCUFkEFACEUFkFFACGUFkGFACIUFkHFACKUDoGGQa+NgcDNggVCBUHogB4GQYVCC83CbsAB1kUAIy3AAs6CxkLCRYJFACOfxQAkH+2AJIZCxQAlgq2AJKyAJgCuAAXGQUWCRQAnX+2AJ8UAKMEGQu5AKUHADYMsgAhFgm4AKkVDLgAr7oAtQAAtgA1FQyaAA27AHtZEri3AH+/hAgBp/+HFAC6NwUZBBYFFACjEAe5ALwGABkEFgUQDLwIWQMQH1RZBBAgVFkFBlRZBhDVVFkHEB9UWQgQIFRZEAYGVFkQBxDVVFkQCBAfVFkQCRAgVFkQCgZUWRALENVUuQDCBAAEvApZAwNPOgcZBLsAxlkZB7cAyBYFFgUUAMthAbkAzQcAGQQWBRYFFADLYQkJuQDRCQAZBwMuBp8ADbsAe1kS1bcAf7+yACES17YANS3GACctuQDZAQCnAB46BC3GABUtuQDZAQCnAAw6BRkEGQW2AN4ZBL+yACES4rYANbEAAgBOAe8B/ADcAgICCAILANwAAgDnAAAAbgAbAAAAEgAPABMAIAAUADQAFQBOABYAVgAXAGkAGAB6ABkAjQAaAJwAHADVAB0A+gAeARkAHwEuACABPQAcAUMAIwFIACQBVgAlAaIAJgGrACcBxAAtAdUALgHnAC8B7wAwAfwAFQIXADECHwAyAOoAAABuAAn/AJwABgcA6wcABwEHAFYHAL0HABgAAP4AKgcA7QEB+wB1/wAFAAUHAOsHAAcBBwBWBwC9AAD9AKMEBwDv/wAUAAQHAOsHAAcBBwBWAAEHANz/AA4ABQcA6wcABwEHAFYHANwAAQcA3Aj5AAIA8QAAAAQAAQDyAAQA9AAAAAIA9QD2AAAACAADAJkAEgDGAPcAAAAUAAMA+AABAP4A+AABAQAA+AABAQIBBAAAACIABAASAOQBBQYJAJkA5AEGBgkAxgAAAAAAAAEHAQkBCwAZ"}, "runner": "\\"\\"\\"Two bounded synthetic local children: default vs CFG enabled at process creation.\\nNever disables a mitigation, loads account state, or connects to a service.\\n\\"\\"\\"\\nfrom pathlib import Path\\nimport ctypes as c,ctypes.wintypes as w,os,subprocess,json,hashlib,sys\\nW=Path(__file__).resolve().parent; R=W.parents[1]; B=W/\'post29-recovery-candidate/backend\'\\nsys.path.insert(0,str(W))\\nT=W/\'signer-debug-tools\';O=R/\'outputs/account-sync/post35-controlflow\'\\nB=Path(os.environ.get(\'PROBE_BACKEND\',str(B)));T=Path(os.environ.get(\'PROBE_TOOLS\',str(T)));O=Path(os.environ.get(\'PROBE_OUTPUT\',str(O)))\\nO.mkdir(exist_ok=True)\\nk=c.WinDLL(\'kernel32\',use_last_error=True);P=c.c_void_p;SZ=c.c_size_t\\nclass SA(c.Structure):_fields_=[(\'nLength\',w.DWORD),(\'descriptor\',P),(\'inherit\',w.BOOL)]\\nclass SI(c.Structure):\\n _fields_=[(\'cb\',w.DWORD),(\'reserved\',w.LPWSTR),(\'desktop\',w.LPWSTR),(\'title\',w.LPWSTR),(\'x\',w.DWORD),(\'y\',w.DWORD),(\'xs\',w.DWORD),(\'ys\',w.DWORD),(\'xc\',w.DWORD),(\'yc\',w.DWORD),(\'fill\',w.DWORD),(\'flags\',w.DWORD),(\'show\',w.WORD),(\'reserved2len\',w.WORD),(\'reserved2\',P),(\'stdin\',P),(\'stdout\',P),(\'stderr\',P)]\\nclass SX(c.Structure):_fields_=[(\'si\',SI),(\'attributes\',P)]\\nclass PI(c.Structure):_fields_=[(\'process\',P),(\'thread\',P),(\'pid\',w.DWORD),(\'tid\',w.DWORD)]\\ndef api(name,result,types):\\n f=getattr(k,name);f.restype=result;f.argtypes=types;return f\\ninit=api(\'InitializeProcThreadAttributeList\',w.BOOL,[P,w.DWORD,w.DWORD,c.POINTER(SZ)])\\nupdate=api(\'UpdateProcThreadAttribute\',w.BOOL,[P,w.DWORD,SZ,P,SZ,P,P])\\ndelete=api(\'DeleteProcThreadAttributeList\',None,[P]);close=api(\'CloseHandle\',w.BOOL,[P])\\ncreatefile=api(\'CreateFileW\',P,[w.LPCWSTR,w.DWORD,w.DWORD,c.POINTER(SA),w.DWORD,w.DWORD,P])\\ncreate=api(\'CreateProcessW\',w.BOOL,[w.LPCWSTR,w.LPWSTR,P,P,w.BOOL,w.DWORD,P,w.LPCWSTR,P,c.POINTER(PI)])\\nwait=api(\'WaitForSingleObject\',w.DWORD,[P,w.DWORD]);exitcode=api(\'GetExitCodeProcess\',w.BOOL,[P,c.POINTER(w.DWORD)])\\nterminate=api(\'TerminateProcess\',w.BOOL,[P,w.UINT]);results=[]\\nregister=\'--register-targets\' in sys.argv\\nmetadata=\'--longjump-metadata\' in sys.argv\\ncapture=any(arg.startswith(\'--dump\') for arg in sys.argv[1:])\\nif capture:from capture_synthetic_fastfail import watch\\nfor enabled in ((True,) if register or metadata or capture else (False,True)):\\n name=\'cfg-\'+next(arg[2:] for arg in sys.argv[1:] if arg.startswith(\'--dump\')) if capture else \'cfg-longjump-metadata\' if metadata else \'cfg-targets\' if register else \'cfg-on\' if enabled else \'default\';log=O/(name+\'.log\');receipt=O/(name+\'.json\')\\n assert not receipt.exists(),\'Completed or unknown probe must not be replayed\'\\n temp=O/(name+\'-temp\');temp.mkdir(exist_ok=True)\\n env={key:os.environ[key] for key in (\'SystemRoot\',\'WINDIR\',\'PATH\') if key in os.environ};env.update(TEMP=str(temp),TMP=str(temp))\\n envblock=c.create_unicode_buffer(\'\\\\0\'.join(key+\'=\'+value for key,value in sorted(env.items()))+\'\\\\0\\\\0\')\\n args=[str(B/\'jre/bin/java.exe\'),\'-Djava.io.tmpdir=\'+str(temp),\'--add-opens\',\'java.base/java.lang=ALL-UNNAMED\',\'-Xmx128m\',\'-cp\',str(T)+\';\'+str(B/\'sign/unidbg-sign.jar\'),\'SignerControlFlowProbe\']\\n if os.environ.get(\'PROBE_JAR\'):args[args.index(\'-cp\')+1]=str(T)+\';\'+os.environ[\'PROBE_JAR\']\\n if register:args.append(\'register-targets\')\\n if metadata:args[args.index(\'-cp\')+1]=str(T)+\';\'+str(T/\'unidbg-longjump-metadata.jar\')\\n command=c.create_unicode_buffer(subprocess.list2cmdline(args));s=SX();s.si.cb=c.sizeof(s) if enabled else c.sizeof(SI);s.si.flags=0x100\\n sa=SA(c.sizeof(SA),None,True);output=createfile(str(log),0x40000000,3,c.byref(sa),2,0x80,None);inp=createfile(\'NUL\',0x80000000,3,c.byref(sa),3,0x80,None)\\n assert output not in (None,P(-1).value) and inp not in (None,P(-1).value)\\n s.si.stdout=output;s.si.stderr=output;s.si.stdin=inp\\n attr=None;pi=PI();row=dict(state=\'starting\',cfgRequested=enabled,networkRequests=0,syntheticOnly=True)\\n receipt.write_text(json.dumps(row),encoding=\'utf8\')\\n try:\\n  flags=0x08000000|0x400\\n  if capture:flags|=2\\n  if enabled:\\n   size=SZ();init(None,1,0,c.byref(size));attr=c.create_string_buffer(size.value)\\n   assert init(attr,1,0,c.byref(size));s.attributes=c.cast(attr,P)\\n   policy=c.c_ulonglong(1<<40) # PROCESS_CREATION_MITIGATION_POLICY_CONTROL_FLOW_GUARD_ALWAYS_ON\\n   assert update(attr,0,0x20007,c.byref(policy),c.sizeof(policy),None,None)\\n   flags|=0x80000\\n  if not create(str(B/\'jre/bin/java.exe\'),command,None,None,True,flags,envblock,str(T),c.byref(s),c.byref(pi)):raise c.WinError(c.get_last_error())\\n  if capture:\\n   row[\'dumpCaptured\']=watch(pi.process,pi.pid,O)\\n  timed=wait(pi.process,30000)==258\\n  if timed:terminate(pi.process,99);wait(pi.process,5000)\\n  code=w.DWORD();assert exitcode(pi.process,c.byref(code));row.update(state=\'completed\',exitCode=code.value,exitHex=hex(code.value),timedOut=timed)\\n finally:\\n  if pi.thread:close(pi.thread)\\n  if pi.process:close(pi.process)\\n  close(output);close(inp)\\n  if attr is not None:delete(attr)\\n  receipt.write_text(json.dumps(row,indent=2),encoding=\'utf8\')\\n print(json.dumps(row),flush=True);print(log.read_text(errors=\'replace\')[-1800:],flush=True)\\n"}')
+          root=Path(os.environ['GITHUB_WORKSPACE']);tools=root/'probe-tools';tools.mkdir()
+          for name,value in p['classes'].items():(tools/name).write_bytes(base64.b64decode(value))
+          (tools/'run.py').write_text(p['runner'],encoding='utf8')
+          backend=Path(os.environ['PROBE_BACKEND']);source=backend/'sign/unidbg-sign.jar';jar=tools/'candidate.jar'
+          native=(root/'native-candidate/unicorn.dll').read_bytes()
+          with zipfile.ZipFile(source) as z,zipfile.ZipFile(jar,'w') as output:
+           for item in z.infolist():output.writestr(copy.copy(item),native if item.filename=='natives/windows_64/unicorn.dll' else z.read(item))
+          with zipfile.ZipFile(source) as a,zipfile.ZipFile(jar) as b:
+           changed=[n for n in a.namelist() if hashlib.sha256(a.read(n)).digest()!=hashlib.sha256(b.read(n)).digest()]
+           assert changed==['natives/windows_64/unicorn.dll']
+          with open(os.environ['GITHUB_ENV'],'a',encoding='utf8') as f:
+           f.write('PROBE_TOOLS='+str(tools)+'\nPROBE_JAR='+str(jar)+'\nPROBE_OUTPUT='+str(root/'signer-evidence/controlflow')+'\n')
+      - name: Run default and CFG-on synthetic callbacks once
+        shell: pwsh
+        run: |
+          python probe-tools/run.py
+          if ($LASTEXITCODE -ne 0) { throw 'Harness failed' }
+          foreach($name in @('default','cfg-on')) {
+            $r=Get-Content "signer-evidence/controlflow/$name.json" -Raw | ConvertFrom-Json
+            $log=Get-Content "signer-evidence/controlflow/$name.log" -Raw
+            if ($r.exitCode -ne 0 -or $log -notmatch 'EMULATION_RETURNED=true' -or $log -notmatch 'CLOSED=true') { throw "Engine regression: $name" }
+          }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: signer-${{ matrix.os }}
+          name: guarded-engine-${{ matrix.os }}
           path: signer-evidence/
           retention-days: 3
-          if-no-files-found: error
+
