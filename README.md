@@ -147,6 +147,10 @@ v1.0.3 新增热播榜按需加载、播放服务未就绪时的明确提示，�
 
 | [进度条显隐与外部播放器 #1](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/1) | 原 Issue 已关闭；关闭记录没有关联修复提交，不能据此认定所有现象已经解决。相同问题可新建报告并附复现步骤。 |
 
+## 开发实践与转载资料
+
+想了解这个项目如何使用 AI 辅助开发、验证和持续维护，可阅读[红果桌面端实践记录](docs/AI-ASSISTED-CASE-STUDY.md)。软件编辑与创作者可使用[新版介绍、固定下载入口及素材说明](docs/PROMOTION.md)。下载次数、实测范围和未解决的问题在文中分别说明。
+
 ## 使用反馈
 
 - 遇到故障：[提交问题](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/new?template=bug-report.yml)。请说明系统、软件版本、操作步骤、预期和实际结果。
