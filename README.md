@@ -6,6 +6,8 @@
 
 **由渠道有数独立维护 · 免费使用 · Windows 正式版 1.0.51**
 
+[☕ 自愿支持维护](docs/SUPPORT.md) · 最近更新与后续维护重点，均可免费查看。
+
 **[渠道有数网站](https://shiyuemenghui.top/?utm_source=github&utm_medium=readme&utm_campaign=custom_domain)** · [安装帮助](https://shiyuemenghui.top/help/install/?utm_source=github&utm_medium=readme&utm_campaign=custom_domain)
 
 网站暂有部分网络无法访问；遇到打不开时，可直接使用下方 GitHub 安装包和本页说明。
@@ -150,6 +152,10 @@ v1.0.3 新增热播榜按需加载、播放服务未就绪时的明确提示，�
 ## 开发实践与转载资料
 
 想了解这个项目如何使用 AI 辅助开发、验证和持续维护，可阅读[红果桌面端实践记录](docs/AI-ASSISTED-CASE-STUDY.md)。软件编辑与创作者可使用[新版介绍、固定下载入口及素材说明](docs/PROMOTION.md)。下载次数、实测范围和未解决的问题在文中分别说明。
+
+## 自愿支持维护
+
+如果某次更新解决了你的问题，欢迎[请作者喝杯咖啡](docs/SUPPORT.md)，支持后续维护、问题排查和设备适配。支持页提供微信、支付宝二维码与近期更新记录。**完全自愿，不影响免费使用，也不购买剧集、会员或优先修复服务。**
 
 ## 使用反馈
 
