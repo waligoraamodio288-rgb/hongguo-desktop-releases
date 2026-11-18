@@ -21,6 +21,7 @@
 
 每一次支持，都在鼓励这些细小但必要的维护工作。以下为已有发行说明中的实际改动，并非未来功能承诺：
 
+- [Windows 1.0.52](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.52)：在“设置 → 关于”和展开后的更新说明加入自愿支持入口，免费使用与更新不受影响。
 - [Windows 1.0.51](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.51)：修复下载断点记录不一致与手机进度同步回执容量问题，改善评论图片查看和全屏按钮遮挡。
 - [Windows 1.0.50](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.50)：优化本地 HEVC 软件解码，修复选集分组筛选、小窗还原和启动重复检查问题。
 
