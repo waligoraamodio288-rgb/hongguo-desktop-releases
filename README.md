@@ -8,9 +8,9 @@
 
 [☕ 自愿支持维护](docs/SUPPORT.md) · 最近更新与后续维护重点，均可免费查看。
 
-**[渠道有数网站](https://shiyuemenghui.top/?utm_source=github&utm_medium=readme&utm_campaign=custom_domain)** · [安装帮助](https://shiyuemenghui.top/help/install/?utm_source=github&utm_medium=readme&utm_campaign=custom_domain)
+**[Windows 安装帮助](docs/WINDOWS-INSTALL.md)** · [渠道有数网站](https://shiyuemenghui.top/?utm_source=github&utm_medium=readme&utm_campaign=custom_domain)
 
-网站暂有部分网络无法访问；遇到打不开时，可直接使用下方 GitHub 安装包和本页说明。
+独立网站在部分网络下暂时打不开。Windows 下载、安装和升级请使用本页及 GitHub 安装指南。
 
 **[下载 Windows 安装程序](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.66/hongguo-1.0.66-windows-x86_64-setup.exe)**　｜　[安装和排错](docs/WINDOWS-INSTALL.md)　｜　[下载与安装说明](#下载与安装说明)　｜　[全部版本](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases)
 
@@ -83,7 +83,7 @@ beta.2 修复原生全屏和偏好关闭交互，同一候选在 M2 上通过2�
 
 [看 24 秒 Windows 实录](https://www.bilibili.com/video/BV1bbs86wEGt/)，演示切换深色模式、调整自动连播和查看版本（录制于 1.0.66）。
 
-收藏或分享[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)，可减少旧文章停留在过期版本的问题。旧版用户可查看[升级与安装帮助](https://shiyuemenghui.top/help/install/#upgrade)；已是同版且正常使用，无需重复下载。
+收藏或分享[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)，可减少旧文章停留在过期版本的问题。旧版用户可查看[升级与安装帮助](docs/WINDOWS-INSTALL.md#电脑上已经装过怎样升级)；已是同版且正常使用，无需重复下载。
 
 1. 通过上方链接下载 `hongguo-1.0.66-windows-x86_64-setup.exe`。
 
