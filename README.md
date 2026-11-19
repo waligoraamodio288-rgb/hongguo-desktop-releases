@@ -81,6 +81,8 @@ beta.2 修复原生全屏和偏好关闭交互，同一候选在 M2 上通过2�
 
 [Windows 安装与排错速查](docs/WINDOWS-INSTALL.md)可单独转发给第一次安装的朋友。
 
+[看 24 秒 Windows 实录](https://www.bilibili.com/video/BV1bbs86wEGt/)，演示切换深色模式、调整自动连播和查看版本（录制于 1.0.66）。
+
 收藏或分享[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)，可减少旧文章停留在过期版本的问题。旧版用户可查看[升级与安装帮助](https://shiyuemenghui.top/help/install/#upgrade)；已是同版且正常使用，无需重复下载。
 
 1. 通过上方链接下载 `hongguo-1.0.66-windows-x86_64-setup.exe`。
