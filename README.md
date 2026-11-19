@@ -1,4 +1,4 @@
-# 红果短剧｜Windows、Mac 测试版与 Android TV
+# 红果短剧电脑版｜Windows 正式版、Mac 与 Android TV 测试版
 
 > **Windows 1.0.66 优化版已发布**：修复点赞操作卡住、Escape误关评论面板及资料位置首次读取失败后无重试入口。保持原有粉色风格。[查看更新与下载](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.66)。
 
