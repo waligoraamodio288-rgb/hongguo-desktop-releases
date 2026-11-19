@@ -4,7 +4,7 @@ title: "[问题] "
 body:
   - type: markdown
     attributes:
-      value: "请先查看 README 已知问题。不要上传账号密码、令牌或私人观看记录，截图请遮住无关信息。"
+      value: "请先查看 [Windows 安装与播放排查](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/docs/WINDOWS-INSTALL.md)。不要上传账号密码、令牌或私人观看记录，截图请遮住无关信息。"
   - type: dropdown
     id: system
     attributes:
@@ -20,7 +20,7 @@ body:
     attributes:
       label: 软件版本
       description: 如果还没装好或无法启动，可以留空；已安装时可在应用设置中查看。
-      placeholder: 例如 1.0.4
+      placeholder: 例如设置中显示的版本号
     validations:
       required: false
   - type: textarea
