@@ -1,6 +1,6 @@
 # 从 Vibe Coding 到持续维护：红果桌面端的产品实践
 
-作者：渠道有数 · 更新：2026-11-18
+作者：渠道有数 · 更新：2026-11-19
 
 用 AI 做出一个可以运行的界面，是开始。把它交到别人的电脑上，让用户知道怎么下载、怎么安装、遇到问题去哪反馈，是另一段工作。红果桌面端是我在持续推进的 AI 辅助开发实践。
 
@@ -10,7 +10,7 @@
 
 红果桌面端把找剧、收藏、选集和本机续看放进 Windows 窗口。使用者不需要先理解 AI 或开发工具；他们关心的是能否找到想看的剧、能否接着上次的位置播放，以及中断后有没有清楚的处理入口。
 
-当前 Windows 正式版为 **1.0.50**，适用于 Windows 10/11 x64，免费使用。另有 Mac M 系列和 Android TV 测试版，功能、系统要求和验证范围分别列在[项目首页](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases#按设备选择下载)。三端并不代表功能完全一致，也不代表观看进度跨端同步。
+截至 2026-11-19，Windows 正式版为 **1.0.66**，适用于 Windows 10/11 x64，免费使用。另有 Mac M 系列和 Android TV 测试版，功能、系统要求和验证范围分别列在[项目首页](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases#按设备选择下载)。三端并不代表功能完全一致，也不代表观看进度跨端同步。
 
 这是个人独立维护的第三方客户端，与红果短剧官方没有隶属或合作关系；发行仓库用于安装包、文档和反馈，应用完整源码未公开。
 
@@ -27,9 +27,11 @@
 
 AI 可以参与编写、排查和整理，但“生成成功”“测试通过”“用户问题解决”是不同的结果。能把这些区别记录清楚，才方便持续维护。
 
+[1.0.66 的发行记录](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.66)继续处理真实使用中的交互问题。比如按 Esc 时先收起点赞菜单，焦点回到按钮，再由用户决定是否退出评论面板。这一版在原生窗口验证了键盘焦点与本机播放切集，账号操作使用模拟数据验收。
+
 ## 70 万次下载，意味着什么？
 
-2026-11-18 读取本仓库全部 58 个已公开 Release，按名称 `hongguo-*-windows-x86_64-setup.exe` 汇总，Windows Setup 资产累计为 **704,218 次下载**。统计来源是 [GitHub Releases API](https://api.github.com/repos/waligoraamodio288-rgb/hongguo-desktop-releases/releases?per_page=100)，不含更新包、APK、DMG、源码或校验文件。
+2026-11-19 读取本仓库全部 74 个已公开 Release，按名称 `hongguo-*-windows-x86_64-setup.exe` 汇总，Windows Setup 资产累计为 **714,590 次下载**。统计来源是 [GitHub Releases API](https://api.github.com/repos/waligoraamodio288-rgb/hongguo-desktop-releases/releases?per_page=100)，不含更新包、APK、DMG、源码或校验文件。
 
 这个数字包括可能的重复下载和升级下载，**不等于 70 万用户、成功安装、活跃用户或收入**。它说明作品已经发生了实际分发；用户是否顺利安装、首次播放和持续使用，还需要独立证据。
 
