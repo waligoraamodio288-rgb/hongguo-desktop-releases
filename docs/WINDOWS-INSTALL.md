@@ -38,9 +38,20 @@
 | --- | --- |
 | 看到了多个附件 | 手动安装选择 `-setup.exe`。同页的 `-update.exe` 供应用更新使用。 |
 | 提示缺少 WebView2，或安装一直卡在补装 WebView2 | 先等待安装程序完成补装。如果补装失败，可从 [微软 WebView2 官方页面](https://developer.microsoft.com/microsoft-edge/webview2/)选择 Evergreen Standalone Installer（x64）。补装完成后，如果红果安装尚未完成，请重新运行红果 Setup。已安装的用户可直接重新打开红果。 |
-| Windows 显示未知发布者 | 当前安装包没有 Windows 发布者代码签名。先核对原发行仓库和同版本 `SHA256SUMS.txt`，保留系统防护。 |
+| Windows 显示未知发布者 | 当前安装包没有 Windows 发布者代码签名。可按[原版安装包核对步骤](#从转载或镜像下载的安装包怎么核对)比对文件，保留系统防护。 |
 | 提示播放服务未就绪 | 等待约一分钟，再到“设置 → 播放服务”点“检查连接”。仍未连接时，从托盘退出并重开后再查。 |
 | 某集播放中断 | 先重试一次，再换一部剧对照。按下方步骤记录[播放中断发生在哪一步](#播放中断先排查哪一步)。 |
+
+## 从转载或镜像下载的安装包怎么核对？
+
+1. 如果还没安装，可以直接从 [Windows 固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest) 下载。转载和镜像页面显示的版本可能比 GitHub 旧。
+2. 如果已经下载，可以从[原发行仓库的版本列表](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases)打开安装包文件名对应的版本，查看该版本的 `SHA256SUMS.txt`。在 PowerShell 中运行下面这条命令，把示例路径换成手上的文件完整路径。
+
+   ```powershell
+   Get-FileHash -Algorithm SHA256 -LiteralPath 'C:\路径\实际下载的安装包.exe'
+   ```
+
+3. 比对命令输出的 `Hash` 与摘要文件中同名 `-setup.exe` 那一行。两边相同可以核对文件与原发行一致。找不到对应文件或摘要不符时，从固定最新版重新下载。
 
 ## 播放中断先排查哪一步？
 
