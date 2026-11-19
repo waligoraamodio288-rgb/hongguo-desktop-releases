@@ -18,7 +18,7 @@
 
 - [Windows 固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)：文章优先保留这个地址，减少版本过期。
 - [1.0.66 发行说明（2026-11-19）](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.66)：用于本次更新核对。
-- [安装步骤与反馈](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases#三步开始使用)。
+- [Windows 安装与排错速查](WINDOWS-INSTALL.md)。
 - [Android TV 系统要求与下载](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/TV.md)。
 - [Mac 测试版说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases#mac-公开测试版邀请-m-系列用户体验)。
 - [AI 辅助开发实践](AI-ASSISTED-CASE-STUDY.md)。
@@ -27,7 +27,13 @@
 
 1. 打开上方 Windows 固定最新版，展开 **Assets**，选择文件名以 `-setup.exe` 结尾的安装包。
 2. 已安装的用户可以先到软件的“设置 → 关于”检查更新。手动覆盖安装时，请先从托盘退出旧程序，沿用原安装目录。
-3. 打开软件后搜索剧名，进入详情选集。遇到安装或播放问题，可对照[安装步骤与常见问题](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases#三步开始使用)。
+3. 打开软件后搜索剧名，进入详情选集。遇到安装或播放问题，可对照[安装步骤与常见问题](WINDOWS-INSTALL.md)。
+
+## 可用于简介或软件目录的短文案
+
+> 红果桌面端（Windows 10 / 11 x64）：在电脑上找短剧、选集和接着本机进度看。支持收藏、倍速、小窗和老板键，由渠道有数独立维护，免费使用。打开固定最新版，在 Assets 里选择 Windows 的 `-setup.exe` 安装包。
+>
+> Windows 下载与更新：https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest
 
 ## 素材与表述
 
