@@ -85,7 +85,7 @@ beta.2 修复原生全屏和偏好关闭交互，同一候选在 M2 上通过2�
 
 收藏或分享[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)，可减少旧文章停留在过期版本的问题。旧版用户可查看[升级与安装帮助](docs/WINDOWS-INSTALL.md#电脑上已经装过怎样升级)；已是同版且正常使用，无需重复下载。
 
-1. 打开[Windows 固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)，在发行页选择「直接下载 Windows Setup」。也可以展开 Assets，选择文件名以 `-setup.exe` 结尾的安装包。
+1. 打开[Windows 固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)，点击发行页顶部的 Windows 安装包链接。也可以展开 Assets，选择文件名以 `-setup.exe` 结尾的安装包。
 
 2. 升级前通过设置或托盘完全退出旧程序，再按安装程序完成安装；沿用原安装目录和用户资料，无需先卸载旧版本。已有可用 WebView2 时会复用，缺失时安装程序需联网补齐。如果进度条接近终点但仍显示执行 `guoban-webview2-setup.exe`，安装程序正在等待运行环境补装结束，请先不要关闭窗口或重复运行安装包。若在线补装失败、启动提示缺少 WebView2，或已知网络不稳定，可到[微软官方 WebView2 Runtime 下载页](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)选择 **Evergreen Standalone Installer（x64）** 安装，再重试红果安装或启动。若安装进度长时间没有变化，请记录界面和发生时间后反馈。
 
