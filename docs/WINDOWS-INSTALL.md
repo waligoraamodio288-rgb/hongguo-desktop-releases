@@ -1,0 +1,27 @@
+# 红果电脑版下载与安装｜Windows 10 / 11 x64
+
+[打开 Windows 固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest) · [项目首页](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases) · [反馈安装或播放问题](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/new?template=bug-report.yml)
+
+红果桌面端是渠道有数独立维护的免费第三方客户端。可在电脑上找剧、选集、收藏和接着本机进度看。此页适用于 Windows 10 / 11 的 x64 电脑。
+
+## 首次安装，选哪个文件？
+
+1. 打开固定最新版页面，展开 **Assets**（附件）。
+2. 下载文件名以 `-setup.exe` 结尾的 Windows 安装包。这个文件用于手动安装。
+3. 运行安装程序。打开软件后搜索剧名，进入详情选集。下次打开可从左侧“历史”找回本机进度。
+
+## 电脑上已经装过，怎样升级？
+
+先到“设置 → 关于”检查更新。需要手动覆盖安装时，从 Windows 通知区域的托盘菜单完全退出旧程序，再运行此页链接下的最新版安装包，沿用原安装目录。
+
+## 安装或播放遇到问题
+
+| 遇到的情况 | 可以先做什么 |
+| --- | --- |
+| 看到了多个附件 | 手动安装选择 `-setup.exe`。同页的 `-update.exe` 供应用更新使用。 |
+| 提示缺少 WebView2，或安装一直卡在补装 WebView2 | 先等待安装程序完成补装。如果补装失败，可从 [微软 WebView2 官方页面](https://developer.microsoft.com/microsoft-edge/webview2/)选择 Evergreen Standalone Installer（x64），再重试启动。 |
+| Windows 显示未知发布者 | 当前安装包没有 Windows 发布者代码签名。先核对原发行仓库和同版本 `SHA256SUMS.txt`，保留系统防护。 |
+| 提示播放服务未就绪 | 等待约一分钟，再到“设置 → 播放服务”点“检查连接”。仍未连接时，从托盘退出并重开后再查。 |
+| 某集播放中断 | 先重试一次，再换一部剧对照。可在问题反馈里附上版本、连接状态、剧名、集数与屏幕提示。 |
+
+分享给朋友时可直接转发[固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)。Mac 和 Android TV 请从[项目首页的设备下载入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases#按设备选择下载)选包。
