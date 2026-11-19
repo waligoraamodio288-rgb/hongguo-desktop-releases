@@ -8,9 +8,15 @@
 
 1. 打开固定最新版页面，展开 **Assets**（附件）。
 2. 下载文件名以 `-setup.exe` 结尾的 Windows 安装包。这个文件用于手动安装。
-3. 运行安装程序。打开软件后搜索剧名，进入详情选集。下次打开可从左侧“历史”找回本机进度。
+3. 运行安装程序。打开软件后，继续看[首次使用步骤](#装好后怎么在电脑上开始看)。
 
 [看 24 秒设置实录](https://www.bilibili.com/video/BV1bbs86wEGt/)：从 1.0.66 界面查看版本、切换深色模式和调整自动连播。
+
+## 装好后，怎么在电脑上开始看？
+
+1. 在搜索框输入剧名，打开搜索结果中的剧集详情。
+2. 选择一集，确认画面和声音正常。需要接着看时，回到左侧“历史”打开刚才的剧。
+3. 如果卡住，可先对照下方的[安装或播放遇到问题](#安装或播放遇到问题)。需要反馈时，请注明卡在安装、打开软件、搜索或播放中的哪一步，并附上屏幕提示。
 
 ## 电脑上已经装过，怎样升级？
 
@@ -26,4 +32,8 @@
 | 提示播放服务未就绪 | 等待约一分钟，再到“设置 → 播放服务”点“检查连接”。仍未连接时，从托盘退出并重开后再查。 |
 | 某集播放中断 | 先重试一次，再换一部剧对照。可在问题反馈里附上版本、连接状态、剧名、集数与屏幕提示。 |
 
-分享给朋友时可直接转发[固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)。Mac 和 Android TV 请从[项目首页的设备下载入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases#按设备选择下载)选包。
+## 发给第一次安装的朋友
+
+> 在 Windows 10/11 x64 电脑上找短剧、选集和接着上次看。这里有下载、安装和第一次打开后的操作步骤：https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/docs/WINDOWS-INSTALL.md
+
+已经用过的朋友可直接打开[固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)。Mac 和 Android TV 请从[项目首页的设备下载入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases#按设备选择下载)选包。
