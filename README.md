@@ -12,7 +12,7 @@
 
 网站暂有部分网络无法访问；遇到打不开时，可直接使用下方 GitHub 安装包和本页说明。
 
-**[下载 Windows 安装程序](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.66/hongguo-1.0.66-windows-x86_64-setup.exe)**　｜　[三步安装](#三步开始使用)　｜　[下载与安装说明](#下载与安装说明)　｜　[全部版本](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases)
+**[下载 Windows 安装程序](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.66/hongguo-1.0.66-windows-x86_64-setup.exe)**　｜　[安装和排错](docs/WINDOWS-INSTALL.md)　｜　[下载与安装说明](#下载与安装说明)　｜　[全部版本](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases)
 
 Windows 10 / 11 **x64（64 位）** · 安装包 **112.0 MiB**。普通使用只需下载 `.exe`，不需要下载源码 ZIP、`.sig` 或 `latest.json`。
 
@@ -78,6 +78,8 @@ beta.2 修复原生全屏和偏好关闭交互，同一候选在 M2 上通过2�
 第三方收录：[不死鸟 2026 年 9 月 23 日每日分享](https://iui.su/213/)。该条目现链接到本项目的发行列表，可在列表中查看当前正式版。
 
 ## 三步开始使用
+
+[Windows 安装与排错速查](docs/WINDOWS-INSTALL.md)可单独转发给第一次安装的朋友。
 
 收藏或分享[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)，可减少旧文章停留在过期版本的问题。旧版用户可查看[升级与安装帮助](https://shiyuemenghui.top/help/install/#upgrade)；已是同版且正常使用，无需重复下载。
 
