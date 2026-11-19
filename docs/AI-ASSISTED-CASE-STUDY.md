@@ -29,6 +29,19 @@ AI 可以参与编写、排查和整理，但“生成成功”“测试通过�
 
 [1.0.66 的发行记录](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.66)继续处理真实使用中的交互问题。比如按 Esc 时先收起点赞菜单，焦点回到按钮，再由用户决定是否退出评论面板。这一版在原生窗口验证了键盘焦点与本机播放切集，账号操作使用模拟数据验收。
 
+## 同一个 Windows 版本，怎样验证升级和回退？
+
+以 1.0.65 升到 1.0.66 为例，准备一份隔离的 Windows 环境、一份旧版安装和一组已知的测试数据。收藏、历史和播放进度使用合成数据，账号文件使用不透明的测试内容。
+
+| 验收步骤 | 1.0.66 实际验证 |
+| --- | --- |
+| 覆盖安装并核对资源 | 从 1.0.65 升到 1.0.66，检查安装后的 4,254 项资源，重新打开程序。 |
+| 查本机数据 | 检查升级后收藏、历史、播放进度及测试账号文件是否保留。 |
+| 查卸载保留与回退 | 验证卸载时保留资料，再回到 1.0.65；将这一步的结果和升级结果各自记录。 |
+| 看运行时表现 | 在原生窗口检查 Esc 的焦点顺序，并用本地 H.264/AAC 样本验证第 1 → 2 → 1 集切换。 |
+
+升级验收使用隔离数据和本地样本。在线搜索和内容获取沿用 1.0.65，本轮保留其已有验证证据。 [公开验收摘要](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases#readme) · [1.0.66 发行记录](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.66)
+
 ## 70 万次下载，意味着什么？
 
 2026-11-19 读取本仓库全部 74 个已公开 Release，按名称 `hongguo-*-windows-x86_64-setup.exe` 汇总，Windows Setup 资产累计为 **714,590 次下载**。统计来源是 [GitHub Releases API](https://api.github.com/repos/waligoraamodio288-rgb/hongguo-desktop-releases/releases?per_page=100)，不含更新包、APK、DMG、源码或校验文件。
