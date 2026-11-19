@@ -32,6 +32,8 @@
 
 先到“设置 → 关于”检查更新。需要手动覆盖安装时，从 Windows 通知区域的托盘菜单完全退出旧程序，再运行此页链接下的最新版安装包，沿用原安装目录。
 
+想长期跟进版本，可以把[发行订阅（Atom）](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases.atom)添加到 RSS 阅读器。订阅涵盖项目各平台的发行说明，Windows 安装包仍从固定最新版选择。
+
 ## 安装或播放遇到问题
 
 | 遇到的情况 | 可以先做什么 |
