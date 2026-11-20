@@ -1,6 +1,14 @@
 # 红果桌面端：可转载介绍与素材说明
 
-更新：2026-11-19 · 维护者：渠道有数 · 第三方独立客户端
+更新：2026-11-20 · 维护者：渠道有数 · 第三方独立客户端
+
+## Windows 1.0.67 主推 · 摸鱼播放双模式
+
+> 小窗持续播，小电视随鼠标开合。红果桌面端 1.0.67 新增悬浮小电视。鼠标放上去接着看，移开就暂停并缩回。普通小窗也能随时切进悬浮，退出后回到普通小窗，原来的集数与进度都在。
+>
+> Windows 10 / 11 x64 免费使用。打开[固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)，下载 `-setup.exe`，已安装的用户也可在软件内检查更新。
+
+[查看本版说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.67) · [两种模式的使用方法](WINDOWS-INSTALL.md#普通小窗和悬浮小电视怎么搭配)
 
 ## 一句话介绍
 
@@ -10,14 +18,14 @@
 
 红果桌面端由渠道有数独立维护，适用于 Windows 10/11 x64。它把找剧、收藏、选集与续看放在同一个电脑窗口中。老板键默认 Ctrl+Shift+B，隐藏时暂停、恢复后保留原位置与倍速；原本手动暂停的内容保持暂停。
 
-截至 2026-11-19，Windows 正式版为 1.0.66。本版修复点赞按钮卡在处理中、按 Esc 误关评论面板，以及资料位置读取失败后缺少重试入口的问题。后续版本及验证范围以发行说明为准。
+Windows 正式版为 1.0.67。更新细节与验证范围见本版发行说明。
 
 项目另有 Mac M 系列与 Android TV 测试版，系统要求和功能范围各自独立。它不是红果短剧官方出品；应用完整源码未公开。下载不需要关注、回帖或私信取包。
 
 ## 下载与参考链接
 
 - [Windows 固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)：文章优先保留这个地址，减少版本过期。
-- [1.0.66 发行说明（2026-11-19）](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.66)：用于本次更新核对。
+- [1.0.67 发行说明（2026-11-20）](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.67)：用于本次更新核对。
 - [Windows 安装与排错速查](WINDOWS-INSTALL.md)。
 - [Android TV 系统要求与下载](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/TV.md)。
 - [Mac 测试版说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases#mac-公开测试版邀请-m-系列用户体验)。
