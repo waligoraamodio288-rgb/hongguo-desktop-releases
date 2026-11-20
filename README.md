@@ -1,10 +1,10 @@
 # 红果短剧电脑版｜Windows 正式版、Mac 与 Android TV 测试版
 
-> **Windows 1.0.67 已发布 · 摸鱼播放双模式**：普通小窗置顶连续播，悬浮小电视移入接着播、移出暂停缩回。两种方式可以来回切换。[查看更新与下载](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.67)。
+> **Windows 1.0.68 已发布 · 悬浮小窗可调大小**：悬浮小电视增加四档大小，移入续播、移出暂停缩回。左侧「发现」正上方可打开内置打赏页。[查看更新与下载](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.68)。
 
 在 Windows 电脑上找剧、接着上次看。支持搜索、收藏、本机观看进度、选集、倍速和自动连播。
 
-**由渠道有数独立维护 · 免费使用 · Windows 正式版 1.0.67**
+**由渠道有数独立维护 · 免费使用 · Windows 正式版 1.0.68**
 
 [☕ 自愿支持维护](docs/SUPPORT.md) · 最近更新与后续维护重点，均可免费查看。
 
@@ -12,30 +12,30 @@
 
 独立网站在部分网络下暂时打不开。Windows 下载、安装和升级请使用本页及 GitHub 安装指南。
 
-**[下载 Windows 安装程序](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.67/hongguo-1.0.67-windows-x86_64-setup.exe)**　｜　[安装和排错](docs/WINDOWS-INSTALL.md)　｜　[下载与安装说明](#下载与安装说明)　｜　[全部版本](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases)
+**[下载 Windows 安装程序](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.68/hongguo-1.0.68-windows-x86_64-setup.exe)**　｜　[安装和排错](docs/WINDOWS-INSTALL.md)　｜　[下载与安装说明](#下载与安装说明)　｜　[全部版本](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases)
 
-Windows 10 / 11 **x64（64 位）** · 安装包 **111.7 MiB**。普通使用只需下载 `.exe`，不需要下载源码 ZIP、`.sig` 或 `latest.json`。
+Windows 10 / 11 **x64（64 位）** · 安装包 **113.2 MiB**。普通使用只需下载 `.exe`，不需要下载源码 ZIP、`.sig` 或 `latest.json`。
 
 ## 按设备选择下载
 
 | 你的设备 | 当前版本与入口 | 安装前确认 |
 | --- | --- | --- |
-| Windows 电脑 | [1.0.67 正式版 · 下载 Setup](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.67/hongguo-1.0.67-windows-x86_64-setup.exe) | Windows 10/11 x64 |
+| Windows 电脑 | [1.0.68 正式版 · 下载 Setup](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.68/hongguo-1.0.68-windows-x86_64-setup.exe) | Windows 10/11 x64 |
 | Android 电视、盒子、投影 | [0.5.9 测试版 · 选 ARM32 / ARM64](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/TV.md) | Android 5.0+，按系统架构选包 |
 | Mac | [1.0.9 beta.2 · 下载与安装说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.9-beta.2) | M 系列、macOS 14+；测试版，暂不支持 Intel |
 
 分享 Windows 下载请使用[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)；TV 和 Mac 请分享上方各自入口。无需关注、回帖或私信取包。
 
-## Windows 1.0.67：小窗持续播放，悬浮小电视随鼠标开合
+## Windows 1.0.68：小窗持续播放，悬浮小电视随鼠标开合
 
 - **直接在电脑上追剧**：搜索、选集、倍速、小窗与自动连播，无需安卓模拟器。
 - **保留自己的追剧记录**：支持保存登录、本机观看进度和手机云片单入口。11 月 14 日隔离复制现有登录后，两次启动保持登录，缓存片单、本地历史与进度一致；原账号文件未改变。
 - **遇到中断有恢复入口**：首次准备已取得有效结果但本地保存失败时，保留加密结果供后续重试或重开恢复，避免重复初始化。
 - **更新与通知**：软件内检查更新，公告横幅提供版本说明和使用提醒。
 
-**[下载 Windows 1.0.67 安装包](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.67/hongguo-1.0.67-windows-x86_64-setup.exe)** · **[查看更新与已知问题](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.67)** · [反馈问题](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/new?template=bug-report.yml)
+**[下载 Windows 1.0.68 安装包](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.68/hongguo-1.0.68-windows-x86_64-setup.exe)** · **[查看更新与已知问题](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.68)** · [反馈问题](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/new?template=bug-report.yml)
 
-本次验证范围：Windows 原生播放器实测普通小窗与悬浮小电视联动、移入续播和移出暂停。正式安装包通过独立环境新装、1.0.66 升级及回退，核对收藏、历史、进度与账号文件保留。
+本次验证范围：Windows 原生播放器实测四档窗口尺寸与再次展开，核对首页、播放器打赏码及离线显示。正式安装包通过独立环境新装、从 1.0.67 升级及回退，核对收藏、历史、进度与账号文件保留。
 
 **已知反馈（2026-11-17）**：[#1432](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/1432) 所涉及的旧原生签名器现已修复一条实证的 CFG 返回崩溃路径；尚未在反馈者同型 Windows 11 x64 机器复核，不能视为其所有异常均已解决。[#1434](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/1434) 的失败注册阻塞已加入手动恢复。遇到问题请附系统、版本、剧名和集数，不要提交账号凭据或删除用户资料。
 
@@ -107,13 +107,13 @@ beta.2 修复原生全屏和偏好关闭交互，同一候选在 M2 上通过2�
 
 ## 旧版无法播放，先检查哪个版本？
 
-Windows 用户可先在设置里核对版本。当前正式版为 1.0.67；旧版用户请通过[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)获取当前安装包。这个修复不代表所有网络、设备或剧集都能正常播放。更新后仍失败，请按上面的“播放中断时”步骤反馈版本、屏幕提示和换剧结果。
+Windows 用户可先在设置里核对版本。当前正式版为 1.0.68；旧版用户请通过[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)获取当前安装包。这个修复不代表所有网络、设备或剧集都能正常播放。更新后仍失败，请按上面的“播放中断时”步骤反馈版本、屏幕提示和换剧结果。
 
 电视、盒子和平板请使用上方 Android TV 入口；真人剧、漫剧和 AI剧（AI 剧）分类独立，当前0.5.9提供ARM32与ARM64两种安装包。Windows 安装程序不能安装到电视。
 
 ## 版本变化与已知反馈
 
-**当前 1.0.67：** 在播放器点「迷你窗口」开启普通小窗，或点「悬浮小电视」按鼠标位置播放。由小窗进入悬浮模式，退出会回到普通小窗。[正式版说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.67) · [前一正式版 1.0.66](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.66)。
+**当前 1.0.68：** 悬浮小电视展开后可在顶部选 0.75×、1×、1.25× 或 1.5×；「发现」正上方的打赏页可直接查看收款码。[正式版说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.68) · [前一正式版 1.0.67](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.67)。
 
 **1.0.51（历史）：** 修复下载断点记录不一致与手机进度同步回执容量问题，改善评论图片查看和全屏按钮遮挡。
 
@@ -177,11 +177,11 @@ v1.0.3 新增热播榜按需加载、播放服务未就绪时的明确提示，�
 
 当前版本尚未配置 Windows 发布者代码签名，系统可能显示未知发布者或 SmartScreen 提示。请核对下载来源与文件，不要关闭系统防护；某些系统策略可能限制安装。
 
-Windows 1.0.67 安装器大小：`117145439` 字节。SHA-256：
+Windows 1.0.68 安装器大小：`118720410` 字节。SHA-256：
 
 ```text
 
-A810A11556DDD57FFDF78B1C0B46B5EBC3F1DABC5D8172C2B52CAC8D9AEF87F5
+1A2906C5F197EB36765A5464A5027EC5BFC04E0B89B59BFC93D2C75DA1EF18D1
 
 ```
 
