@@ -1,0 +1,99 @@
+name: Reconstruct verified Windows 1.0.68 assets
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: reconstruct-windows-1.0.68
+  cancel-in-progress: false
+jobs:
+  reconstruct:
+    if: github.repository == 'waligoraamodio288-rgb/hongguo-desktop-releases'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: waligoraamodio288-rgb/hongguo-desktop-releases
+    steps:
+      - name: Reconstruct exact accepted files and verify draft assets
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import ctypes as c,ctypes.util,hashlib,json,os,shutil,subprocess,tempfile,zipfile
+          from pathlib import Path
+          REPO="waligoraamodio288-rgb/hongguo-desktop-releases"
+          RID=452642037
+          TRANSPORT="release68-reconstruction.zip"
+          TRANSPORT_SHA='2180d6f45cf825c2979b34ad0964d7127c2d793a0da1aa1f746d7b3ed0a8ad9a'
+          TRANSPORT_SIZE=9910885
+          PARTS=[{'name': 'release68-reconstruction.part01', 'size': 1048576, 'sha256': '0f71b1aa6932c168b29826fb23f40ebc3aadac7c5d52c6c37d5dbfaaf3322c5d'}, {'name': 'release68-reconstruction.part02', 'size': 1048576, 'sha256': '37dbd65801f8ce5b3604aa67f7e6b82c86f69fc30b66945d27c486e01015e8b1'}, {'name': 'release68-reconstruction.part03', 'size': 1048576, 'sha256': '2b07d71d882809137ba50864bada57202e457e0fba3b2b926a6258574cec4087'}, {'name': 'release68-reconstruction.part04', 'size': 1048576, 'sha256': '8a6d68382dbc4b3bc2ef54390533cae0a79c4fb285ca547d71b5c525621cbe24'}, {'name': 'release68-reconstruction.part05', 'size': 1048576, 'sha256': 'c6f52a9f0de872cd55e141281cdae299fff74dfed873d27b96f656a28daf3739'}, {'name': 'release68-reconstruction.part06', 'size': 1048576, 'sha256': '178fc105e74778dad5c6595240e982389ea81be1605a4e7ebf0c9d6784d10c49'}, {'name': 'release68-reconstruction.part07', 'size': 1048576, 'sha256': '0b6fa87ad77f52bc69e9a15dc0224368b3d0480db755432001b5061fcb87a210'}, {'name': 'release68-reconstruction.part08', 'size': 1048576, 'sha256': 'e4f6eb72062e6d5ac501f8ddf03d5e45fb2fd067f411d91f3bf9d21913161936'}, {'name': 'release68-reconstruction.part09', 'size': 1048576, 'sha256': '3d27573e26b338bdf95436197bc8a117c4b13952093a31eca47815c85d11ff03'}, {'name': 'release68-reconstruction.part10', 'size': 473701, 'sha256': '9a594e4f93681f3cc5a9b6f543ae7916152cf739f3ea9d5ece44250cfbd18307'}]
+          EXPECTED={'hongguo-1.0.68-windows-x86_64-setup.exe': {'size': 118720410, 'sha256': '1a2906c5f197eb36765a5464a5027ec5bfc04e0b89b59bfc93d2c75da1ef18d1'}, 'hongguo-1.0.68-windows-x86_64-update.exe': {'size': 118720410, 'sha256': '1a2906c5f197eb36765a5464a5027ec5bfc04e0b89b59bfc93d2c75da1ef18d1'}, 'hongguo-1.0.68-windows-x86_64-setup.exe.sig': {'size': 432, 'sha256': '318279bff59fc55ef4074af377418dc25dbe829beb46559bc746c51d816e0c66'}, 'latest.json': {'size': 1338, 'sha256': '3ddf69def45eb9ba9e140c3fe9fe874c8ef2e8710e5decf4d8c34d965fcc1604'}, 'hongguo-1.0.68-third-party-sources.zip': {'size': 170170144, 'sha256': 'a6f05c69b039f6ccc587aef5407e39976c6bbda9481ace25b466aa7dddb1eacf'}, 'SHA256SUMS.txt': {'size': 511, 'sha256': 'f1aba2c0abcd25c1906c069f75394943e96742feb7ae3c883b77f9b66bf8c0c9'}}
+          assert os.environ.get("GITHUB_REPOSITORY")==REPO
+          assert os.environ.get("GITHUB_REF")=="refs/heads/main"
+          assert shutil.which("gh")
+          def sha(p):
+           with p.open("rb") as f:return hashlib.file_digest(f,"sha256").hexdigest()
+          def run(*args):return subprocess.check_output(["gh",*args],text=True,timeout=300)
+          def remote():
+           r=json.loads(run("api",f"repos/{REPO}/releases/{RID}"))
+           assert r["draft"] and not r["prerelease"] and r["tag_name"]=="v1.0.68" and r["id"]==RID
+           assets={a["name"]:a for a in r["assets"]}
+           partmap={p['name']:p for p in PARTS}
+           assert len(assets)==len(r["assets"]) and set(assets)<=set(EXPECTED)|set(partmap)
+           for name,a in assets.items():
+            wanted=partmap[name] if name in partmap else EXPECTED[name]
+            assert a["state"]=="uploaded" and a["size"]==wanted["size"] and a["digest"]=="sha256:"+wanted["sha256"]
+           return assets
+          assert all(p['name'] in remote() for p in PARTS)
+          library=ctypes.util.find_library("zstd");assert library
+          z=c.CDLL(library)
+          def bind(name,restype,args):
+           f=getattr(z,name);f.restype=restype;f.argtypes=args;return f
+          ptr=c.c_void_p;size=c.c_size_t
+          create=bind("ZSTD_createDCtx",ptr,[]);free=bind("ZSTD_freeDCtx",size,[ptr]);param=bind("ZSTD_DCtx_setParameter",size,[ptr,c.c_int,c.c_int]);decode=bind("ZSTD_decompress_usingDict",size,[ptr,ptr,size,ptr,size,ptr,size]);iserr=bind("ZSTD_isError",c.c_uint,[size]);errname=bind("ZSTD_getErrorName",c.c_char_p,[size])
+          def check(v):
+           if iserr(v):raise RuntimeError(errname(v).decode())
+           return v
+          with tempfile.TemporaryDirectory(prefix="release68-reconstruction-") as tmp:
+           folder=Path(tmp)
+           archive=folder/TRANSPORT
+           with archive.open('xb') as output:
+            for p in PARTS:
+             assert Path(p['name']).name==p['name'] and p['size']<=8*1024**2
+             run("release","download","v1.0.68","--repo",REPO,"--pattern",p['name'],"--dir",tmp)
+             part=folder/p['name'];assert part.stat().st_size==p['size'] and sha(part)==p['sha256']
+             output.write(part.read_bytes());part.unlink()
+           assert archive.stat().st_size==TRANSPORT_SIZE and sha(archive)==TRANSPORT_SHA
+           with zipfile.ZipFile(archive) as transport:
+            assert set(transport.namelist())=={"plan.json","installer.zst","sources.zst"}
+            assert all(i.file_size<48*1024**2 for i in transport.infolist())
+            plan=json.loads(transport.read("plan.json"))
+            assert plan["scope"]=="release68-transport-only" and plan["releaseId"]==RID and plan["baseTag"]=="v1.0.67" and plan["targetTag"]=="v1.0.68"
+            assert [e["name"] for e in plan["files"]]==["installer","sources"]
+            for e in plan["files"]:
+             for field in ["baseAsset","targetAsset","patch"]:assert Path(e[field]).name==e[field]
+             assert e["targetAsset"] in EXPECTED and e["targetBytes"]==EXPECTED[e["targetAsset"]]["size"] and e["targetSha256"]==EXPECTED[e["targetAsset"]]["sha256"]
+             assert e["baseBytes"]<256*1024**2 and e["targetBytes"]<256*1024**2
+             run("release","download","v1.0.67","--repo",REPO,"--pattern",e["baseAsset"],"--dir",tmp)
+             base=folder/e["baseAsset"];assert base.stat().st_size==e["baseBytes"] and sha(base)==e["baseSha256"]
+             b=base.read_bytes();patch=transport.read(e["patch"]);assert len(patch)==e["patchBytes"] and hashlib.sha256(patch).hexdigest()==e["patchSha256"]
+             ctx=create();assert ctx
+             try:
+              check(param(ctx,100,28));result=c.create_string_buffer(e["targetBytes"]);n=check(decode(ctx,result,len(result),patch,len(patch),b,len(b)))
+              assert n==len(result) and hashlib.sha256(result.raw).hexdigest()==e["targetSha256"]
+              (folder/e["targetAsset"]).write_bytes(result.raw)
+             finally:check(free(ctx))
+             del b,patch,result
+             print(json.dumps({"reconstructed":e["targetAsset"],"sha256":e["targetSha256"]}),flush=True)
+           setup=folder/"hongguo-1.0.68-windows-x86_64-setup.exe"
+           update=folder/"hongguo-1.0.68-windows-x86_64-update.exe";os.link(setup,update)
+           for name in [setup.name,update.name,"hongguo-1.0.68-third-party-sources.zip"]:
+            assets=remote()
+            if name in assets:continue
+            path=folder/name;assert path.stat().st_size==EXPECTED[name]["size"] and sha(path)==EXPECTED[name]["sha256"]
+            run("release","upload","v1.0.68","--repo",REPO,str(path))
+            assert name in remote()
+            print(json.dumps({"uploadedAndVerified":name}),flush=True)
+           assert set(remote())==set(EXPECTED)|{p['name'] for p in PARTS}
+           print(json.dumps({"state":"draft-full-assets-verified","published":False,"installerExecuted":False,"temporaryTransportRetainedForHostVerification":True}),flush=True)
+          PY
