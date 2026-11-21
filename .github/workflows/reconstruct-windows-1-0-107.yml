@@ -1,0 +1,102 @@
+name: Reconstruct verified Windows 1.0.107 asset
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: reconstruct-windows-1.0.107
+  cancel-in-progress: false
+jobs:
+  reconstruct:
+    if: github.repository == 'waligoraamodio288-rgb/hongguo-desktop-releases'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: waligoraamodio288-rgb/hongguo-desktop-releases
+    steps:
+      - name: Reconstruct and verify accepted installer in release draft
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import ctypes as c
+          import ctypes.util
+          import hashlib
+          import json
+          import os
+          import subprocess
+          import tempfile
+          from pathlib import Path
+          
+          REPO = 'waligoraamodio288-rgb/hongguo-desktop-releases'
+          RID = 453705020
+          TARGET_TAG = 'v1.0.107'
+          SETUP = 'hongguo-1.0.107-windows-x86_64-setup.exe'
+          PARTS = {'release107-transport.part01': {'size': 1048576, 'sha256': '7d63f56a32911ce2b160a331f4a154e89ad1e42b9c870578e5a14cdbceb35f65'}, 'release107-transport.part02': {'size': 1048576, 'sha256': '946689121fb5dc2b0410914ac01b31cc77940e514233d4834ecbe2eede54ef89'}, 'release107-transport.part03': {'size': 1048576, 'sha256': 'efeb001c021b697371685241783a5d79c95ab7cc0da3002627c5f6c56ebe692f'}, 'release107-transport.part04': {'size': 1048576, 'sha256': '7cb1cd6238f816dc0dffe0317c161f8d9312990d32fdad97364793245b895872'}, 'release107-transport.part05': {'size': 1048576, 'sha256': 'a1b3ef52b23e60c7fec64235336f040dbfbc3dee636c942a427424bd84e8f142'}, 'release107-transport.part06': {'size': 1048576, 'sha256': '1e979e455798b3a5b5e9db326802b96cf33116bbe9a86eb7fe442bfc07fbb96c'}, 'release107-transport.part07': {'size': 1048576, 'sha256': '548e500374ee10a8787ef0bb5a1d1e922ce9002f62dbd8ba8209e9b1753a39be'}, 'release107-transport.part08': {'size': 295047, 'sha256': '45524f69e5895616c35c5477824e13546a896ab9317955aed01e009fbf8f5261'}}
+          EXPECTED = {'hongguo-1.0.107-windows-x86_64-setup.exe': {'size': 118728911, 'sha256': '63016e9013bc7f4a7cb7435cd48318ba431186a8e7169bb78e9f8d7dbee83dd5'}, 'hongguo-1.0.107-windows-x86_64-setup.exe.sig': {'size': 436, 'sha256': '6d0152485ec9414721d6786605d2feb8c0a5f332765de3e113f385fbb51feca8'}, 'latest.json': {'size': 963, 'sha256': 'de3b0f5dc04dcfbe97681823d394a828269b3b66ae0c396511075d2db68293f5'}, 'SHA256SUMS.txt': {'size': 299, 'sha256': 'b6ee81c50637b6b43c7ea2e45a57c3ead39cf505bafd84e7b4a81d0bd5c8438b'}}
+          BASE = {'tag': 'v1.0.104', 'name': 'hongguo-1.0.104-windows-x86_64-setup.exe',
+                  'size': 118727833, 'sha256': 'a8a7867c0d88ff6bdf62d1f5a464bbd278d2970a06b0a9361031e61f5e8f0d1a'}
+          PATCH = {'size': 7635079, 'sha256': '7b927b9eed28a635a062fcc418398e53be14a8749cecb1a9968c61022d29f34c'}
+          
+          assert os.environ['GITHUB_REPOSITORY'] == REPO
+          assert os.environ['GITHUB_REF'] == 'refs/heads/main'
+          
+          def run(*args):
+              return subprocess.check_output(['gh', *args], text=True, timeout=300)
+          
+          def digest(payload):
+              return hashlib.sha256(payload).hexdigest()
+          
+          def draft_assets():
+              release = json.loads(run('api', f'repos/{REPO}/releases/{RID}'))
+              assert release['draft'] and not release['prerelease'] and release['tag_name'] == TARGET_TAG
+              assets = {item['name']: item for item in release['assets']}
+              allowed = EXPECTED | PARTS
+              assert len(assets) == len(release['assets']) and set(assets) <= set(allowed)
+              for name, item in assets.items():
+                  assert item['state'] == 'uploaded' and item['size'] == allowed[name]['size']
+                  assert item['digest'] == 'sha256:' + allowed[name]['sha256']
+              return assets
+          
+          library=ctypes.util.find_library("zstd");assert library
+          z=c.CDLL(library)
+          def bind(name,restype,args):
+           f=getattr(z,name);f.restype=restype;f.argtypes=args;return f
+          ptr=c.c_void_p;size=c.c_size_t
+          create=bind("ZSTD_createDCtx",ptr,[]);free=bind("ZSTD_freeDCtx",size,[ptr]);param=bind("ZSTD_DCtx_setParameter",size,[ptr,c.c_int,c.c_int]);decode=bind("ZSTD_decompress_usingDict",size,[ptr,ptr,size,ptr,size,ptr,size]);iserr=bind("ZSTD_isError",c.c_uint,[size]);errname=bind("ZSTD_getErrorName",c.c_char_p,[size])
+          def check(v):
+           if iserr(v):raise RuntimeError(errname(v).decode())
+           return v
+          
+          assert set(draft_assets()) >= set(PARTS) | (set(EXPECTED) - {SETUP})
+          with tempfile.TemporaryDirectory(prefix='hongguo-release107-') as tmp:
+              folder = Path(tmp)
+          
+              def download(tag, name, expected):
+                  assert Path(name).name == name
+                  run('release', 'download', tag, '--repo', REPO, '--pattern', name, '--dir', tmp)
+                  artifact = folder / name
+                  assert artifact.stat().st_size == expected['size']
+                  data = artifact.read_bytes()
+                  assert digest(data) == expected['sha256']
+                  return data
+          
+              patch = b''.join(download(TARGET_TAG, name, expected) for name, expected in PARTS.items())
+              assert len(patch) == PATCH['size'] and digest(patch) == PATCH['sha256']
+              base = download(BASE['tag'], BASE['name'], BASE)
+              ctx = create()
+              assert ctx
+              try:
+                  check(param(ctx, 100, 28))
+                  result = c.create_string_buffer(EXPECTED[SETUP]['size'])
+                  written = check(decode(ctx, result, len(result), patch, len(patch), base, len(base)))
+                  assert written == len(result) and digest(result.raw) == EXPECTED[SETUP]['sha256']
+                  installer = folder / SETUP
+                  installer.write_bytes(result.raw)
+              finally:
+                  check(free(ctx))
+              if SETUP not in draft_assets():
+                  run('release', 'upload', TARGET_TAG, '--repo', REPO, str(installer))
+              assert set(draft_assets()) == set(EXPECTED) | set(PARTS)
+              print(json.dumps({'state': 'verified-draft', 'sha256': EXPECTED[SETUP]['sha256']}), flush=True)
+          PY
