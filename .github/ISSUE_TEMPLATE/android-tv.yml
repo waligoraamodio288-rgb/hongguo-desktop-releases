@@ -6,7 +6,7 @@
     {
       "type": "markdown",
       "attributes": {
-        "value": "感谢测试渠道有数维护的红果电视端。0.5.11提供ARMv7 32位和ARM64两种APK，最低Android5.0；请按系统架构选包。旧电视与旧固件仍需逐机验证。请只填写实际结果，截图遮住个人信息，不要提交密码、令牌或私人观看记录。"
+        "value": "感谢测试渠道有数维护的红果电视端。0.5.12提供ARMv7 32位和ARM64两种APK，最低Android5.0；请按系统架构选包。旧电视与旧固件仍需逐机验证。请只填写实际结果，截图遮住个人信息，不要提交密码、令牌或私人观看记录。"
       }
     },
     {
@@ -36,7 +36,7 @@
       "id": "version",
       "attributes": {
         "label": "应用版本",
-        "placeholder": "例如0.5.11-standalone-arm32；无法安装时填写APK文件名"
+        "placeholder": "例如0.5.12-standalone-arm32；无法安装时填写APK文件名"
       },
       "validations": {
         "required": false
