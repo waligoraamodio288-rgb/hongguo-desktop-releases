@@ -3,12 +3,12 @@
   "announcements": [
     {
       "id": "windows-release-1.0.67-floating-tv",
-      "title": "Windows 1.0.67：摸鱼播放双模式",
-      "body": "普通小窗置顶继续播，悬浮小电视移入续播、移出暂停缩回。可从普通小窗切到悬浮，退出后回到小窗。点击查看用法与下载。",
+      "title": "Windows 摸鱼播放 · 小窗与悬浮小电视",
+      "body": "普通小窗置顶继续播。悬浮小电视移入续播、移出暂停缩回，支持 4 档大小。点击看用法和 Windows 最新版。",
       "level": "info",
       "publishedAt": 1795174171,
       "expiresAt": 1796383771,
-      "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.67"
+      "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/docs/PROMOTION.md"
     },
     {
       "id": "windows-release-1.0.28",
