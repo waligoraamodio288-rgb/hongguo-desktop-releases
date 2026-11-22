@@ -21,7 +21,7 @@ Windows 10 / 11 **x64（64 位）** · 安装包 **113.2 MiB**。普通使用只
 | 你的设备 | 当前版本与入口 | 安装前确认 |
 | --- | --- | --- |
 | Windows 电脑 | [1.0.116 正式版 · 下载 Setup](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.116/hongguo-1.0.116-windows-x86_64-setup.exe) | Windows 10/11 x64 |
-| Android 电视、盒子、投影 | [0.5.9 测试版 · 选 ARM32 / ARM64](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/TV.md) | Android 5.0+，按系统架构选包 |
+| Android 电视、盒子、投影 | [0.5.11 测试版 · 选 ARM32 / ARM64](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/TV.md) | Android 5.0+，按系统架构选包 |
 | Mac | [1.0.9 beta.2 · 下载与安装说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.9-beta.2) | M 系列、macOS 14+；测试版，暂不支持 Intel |
 
 分享 Windows 下载请使用[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)；TV 和 Mac 请分享上方各自入口。无需关注、回帖或私信取包。
@@ -57,11 +57,11 @@ beta.2 修复原生全屏和偏好关闭交互，同一候选在 M2 上通过2�
 
 ## 电视、盒子、投影与平板
 
-**0.5.9 测试版 · ARM32 / ARM64 · Android5.0+**
+**0.5.11 测试版 · ARM32 / ARM64 · Android5.0+**
 
-**[下载32位 ARMv7 · 1.27 MB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/tv-v0.5.9/HongguoTV-0.5.9-arm32.apk)** ｜ **[下载64位 ARM64 · 4.11 MB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/tv-v0.5.9/HongguoTV-0.5.9-arm64.apk)**
+**[下载32位 ARMv7 · 1.27 MB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/tv-v0.5.11/HongguoTV-0.5.11-arm32.apk)** ｜ **[下载64位 ARM64 · 4.11 MB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/tv-v0.5.11/HongguoTV-0.5.11-arm64.apk)**
 
-0.5.9 更新主取源并正式接入真人剧、漫剧关键词搜索。两部反馈样本的第4、5、10集在小米Android13平板真实ARM32/ARM64进程持续播放超过30秒，跨过10秒失败位置；实际720p和1080p，第三集续播第四集通过。仅代表本轮样本与设备，不保证全部剧集或旧电视。
+0.5.11 修正主片源请求路径。小米 Android 13 平板的 ARM32 和 ARM64 进程均实测《一念沉沦，霍总心动了》和未标季《十八岁太奶奶驾到，重整家族荣耀》：首集主片源播放超过 30 秒、自然连播到第 2 集及遥控手动切集通过。TCL Android 9 等旧电视仍待实机复验。
 
 保持单播放器、单媒体工作线程、两槽缓存、单文件32MiB上限及64KiB分块下载；低内存自动最高480p，内存紧张时取消预取并释放封面。没有新增软件解码器或转码服务。若某集只有高清轨道，手动限制720p或低内存480p可能无法播放；性能充足且硬解支持的设备可尝试自动或1080p。
 
@@ -109,7 +109,7 @@ beta.2 修复原生全屏和偏好关闭交互，同一候选在 M2 上通过2�
 
 Windows 用户可先在设置里核对版本。当前正式版为 1.0.116；旧版用户请通过[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)获取当前安装包。这个修复不代表所有网络、设备或剧集都能正常播放。更新后仍失败，请按上面的“播放中断时”步骤反馈版本、屏幕提示和换剧结果。
 
-电视、盒子和平板请使用上方 Android TV 入口；真人剧、漫剧和 AI剧（AI 剧）分类独立，当前0.5.9提供ARM32与ARM64两种安装包。Windows 安装程序不能安装到电视。
+电视、盒子和平板请使用上方 Android TV 入口；真人剧、漫剧和 AI剧（AI 剧）分类独立，当前0.5.11提供ARM32与ARM64两种安装包。Windows 安装程序不能安装到电视。
 
 ## 版本变化与已知反馈
 
