@@ -49,7 +49,8 @@
 | 遇到的情况 | 可以先做什么 |
 | --- | --- |
 | 看到了多个附件 | 手动安装选择 `-setup.exe`。同页的 `-update.exe` 供应用更新使用。 |
-| 提示缺少 WebView2，或安装一直卡在补装 WebView2 | 先等待安装程序完成补装。如果补装失败，可从 [微软 WebView2 官方页面](https://developer.microsoft.com/microsoft-edge/webview2/)选择 Evergreen Standalone Installer（x64）。补装完成后，如果红果安装尚未完成，请重新运行红果 Setup。已安装的用户可直接重新打开红果。 |
+| 提示缺少 WebView2，或安装一直卡在补装 WebView2 | 先等补装完成。补装失败，或电脑已有 WebView2 但仍卡在补装步骤时，可从 [微软 WebView2 官方页面](https://developer.microsoft.com/microsoft-edge/webview2/)选择 Evergreen Standalone Installer（x64）安装或更新运行时。完成后重新运行红果 Setup。已安装红果的用户可直接重开应用。 |
+| 安装程序退出并报告 `1603` | 如果同时提示 WebView2，按上一行补装或更新后再试。单靠 `1603` 无法确定原因。仍失败时，请保留安装提示，反馈 Windows 版本、红果安装包版本和安装停在哪一步。 |
 | Windows 显示未知发布者 | 当前安装包没有 Windows 发布者代码签名。可按[原版安装包核对步骤](#从转载或镜像下载的安装包怎么核对)比对文件，保留系统防护。 |
 | 提示播放服务未就绪 | 等待约一分钟，再到“设置 → 播放服务”点“检查连接”。仍未连接时，从托盘退出并重开后再查。 |
 | 点了「立即播放」仍未出画，或某集播放中断 | 按下方步骤区分[首次未出画与开始后中断](#播放中断先排查哪一步)，再用同剧另一集和另一部剧对照。 |
