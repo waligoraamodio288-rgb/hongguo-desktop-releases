@@ -1,12 +1,12 @@
 # 红果短剧电脑版｜Windows 正式版、Mac 与 Android TV 测试版
 
-> **Windows 1.0.138 已发布 · 修复剧名漏搜**。主搜索没有命中剧名时会用红果官网补查，保留原结果和翻页。[查看 1.0.138 更新说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.138)。
+> **Windows 1.0.139 重大更新已发布 · 全站视觉焕新、秒开推荐与通知中心重做**。新增全新浅/深双主题设计系统、「推荐」直进刷剧与切剧 HLS 预热瞬切、顶部通知中心与剧内顶部公告、Ctrl+K 快捷命令面板。[查看 1.0.139 重大更新说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.139)。
 
 在 Windows 电脑上找剧、接着上次看。支持搜索、收藏、本机观看进度、选集、倍速和自动连播。
 
-**由渠道有数独立维护 · 免费使用 · Windows 正式版 1.0.138**
+**由渠道有数独立维护 · 免费使用 · Windows 正式版 1.0.139**
 
-**[下载 Windows 最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)** · [当前版 1.0.138 安装包](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.138/hongguo-1.0.138-windows-x86_64-setup.exe) · [安装和排错](docs/WINDOWS-INSTALL.md) · [全部版本](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases)
+**[下载 Windows 最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)** · [当前版 1.0.139 安装包](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.139/hongguo-1.0.139-windows-x86_64-setup.exe) · [安装和排错](docs/WINDOWS-INSTALL.md) · [全部版本](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases)
 
 [渠道有数网站](https://shiyuemenghui.top/?utm_source=github&utm_medium=readme&utm_campaign=custom_domain) 在部分网络下暂时打不开。Windows 下载、安装和升级可使用上面的 GitHub 链接。
 
@@ -41,7 +41,7 @@ Windows 10 / 11 **x64（64 位）** · 安装包 **113.2 MiB**。普通使用只
 - **遇到中断有恢复入口**：首次准备已取得有效结果但本地保存失败时，保留加密结果供后续重试或重开恢复，避免重复初始化。
 - **更新与通知**：软件内检查更新，公告横幅提供版本说明和使用提醒。
 
-**[下载 Windows 最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)** · **[查看更新与已知问题](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.138)** · [反馈问题](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/new?template=bug-report.yml)
+**[下载 Windows 最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)** · **[查看更新与已知问题](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.139)** · [反馈问题](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/new?template=bug-report.yml)
 
 本次验证范围：Windows 原生播放器实测四档窗口尺寸与再次展开，核对首页、播放器打赏码及离线显示。正式安装包通过独立环境新装、从 1.0.67 升级及回退，核对收藏、历史、进度与账号文件保留。
 
@@ -115,13 +115,13 @@ beta.2 修复原生全屏和偏好关闭交互，同一候选在 M2 上通过2�
 
 ## 旧版无法播放，先检查哪个版本？
 
-Windows 用户可先在设置里核对版本。当前正式版为 1.0.138；旧版用户请通过[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)获取当前安装包。这个修复不代表所有网络、设备或剧集都能正常播放。更新后仍失败，请按上面的“播放中断时”步骤反馈版本、屏幕提示和换剧结果。
+Windows 用户可先在设置里核对版本。当前正式版为 1.0.139；旧版用户请通过[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)获取当前安装包。这个修复不代表所有网络、设备或剧集都能正常播放。更新后仍失败，请按上面的“播放中断时”步骤反馈版本、屏幕提示和换剧结果。
 
 电视、盒子和平板请使用上方 Android TV 入口；真人剧、漫剧和 AI剧（AI 剧）分类独立，当前0.5.12提供ARM32与ARM64两种安装包。Windows 安装程序不能安装到电视。
 
 ## 版本变化与已知反馈
 
-**当前 1.0.138**。剧名漏搜时会自动补查。[正式版说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.138) · [公开回退版 1.0.137](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.137)。
+**当前 1.0.139（重大更新）**。全站视觉与性能重构、推荐瞬切、剧内公告与 Ctrl+K 快捷找剧，保留官网剧名补查。[正式版说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.139) · [公开回退版 1.0.138](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.138)。
 
 **1.0.51（历史）：** 修复下载断点记录不一致与手机进度同步回执容量问题，改善评论图片查看和全屏按钮遮挡。
 
@@ -185,11 +185,11 @@ v1.0.3 新增热播榜按需加载、播放服务未就绪时的明确提示，�
 
 当前版本尚未配置 Windows 发布者代码签名，系统可能显示未知发布者或 SmartScreen 提示。请核对下载来源与文件，不要关闭系统防护；某些系统策略可能限制安装。
 
-Windows 1.0.138 安装器大小：`118791039` 字节。SHA-256：
+Windows 1.0.139 安装器大小：`118820465` 字节。SHA-256：
 
 ```text
 
-689418a22213114894f595f04e85733bc0c0fb303e94d745ebb21465539fd2a8
+0403d6073843296a0b742030d8e780b3c3b47272ab233b643376ba7865e7f604
 
 ```
 

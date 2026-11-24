@@ -1,32 +1,41 @@
 {
-  "app_id": "cn.guoban.desktop-companion",
-  "announcements": [
-    {
-      "id": "windows-release-1.0.67-floating-tv",
-      "title": "Windows 摸鱼播放 · 小窗与悬浮小电视",
-      "body": "普通小窗置顶继续播。悬浮小电视移入续播、移出暂停缩回，支持 4 档大小。点击看用法和 Windows 最新版。",
-      "level": "info",
-      "publishedAt": 1795174171,
-      "expiresAt": 1796383771,
-      "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/docs/PROMOTION.md"
-    },
-    {
-      "id": "windows-release-1.0.28",
-      "title": "1.0.28 首次播放修复版",
-      "body": "修复首次播放准备时 CDN 跳转导致的文件下载失败，保留登录和观看记录。空缓存搜索、播放和切集，以及升级与回退已通过本轮样本验收。可在设置中检查更新，点击查看说明。",
-      "level": "info",
-      "publishedAt": 1794661208,
-      "expiresAt": 1795870808,
-      "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.28"
-    },
-    {
-      "id": "windows-release-1.0.27",
-      "title": "1.0.27 免费体验：电脑追剧，接着上次看",
-      "body": "改善部分播放取址与中断恢复，新增离线文件检查。本机已实测搜索、1080p 切集与重开续播。部分环境仍有搜索、播放失败反馈，请查看版本说明中的已知问题；可在设置中检查更新。",
-      "level": "info",
-      "publishedAt": 1794549802,
-      "expiresAt": 1795759402,
-      "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.27"
-    }
-  ]
+    "app_id":  "cn.guoban.desktop-companion",
+    "announcements":  [
+                          {
+                              "id":  "windows-release-1.0.139-ui",
+                              "title":  "Windows 1.0.139 重大更新已发布 · 全新视觉与秒开推荐",
+                              "body":  "全新浅/深双主题界面与全页面精简焕新上线！「推荐」直进随机刷剧并支持预热瞬切，顶部通知中心与剧内顶部公告全面升级，新增 Ctrl+K 快捷面板。可在通知中心「软件更新」或设置中一键升级。",
+                              "level":  "info",
+                              "publishedAt":  1795499544,
+                              "expiresAt":  1797313944,
+                              "url":  "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.139"
+                          },
+                          {
+                              "id":  "windows-release-1.0.67-floating-tv",
+                              "title":  "Windows 摸鱼播放 · 小窗与悬浮小电视",
+                              "body":  "普通小窗置顶继续播。悬浮小电视移入续播、移出暂停缩回，支持 4 档大小。点击看用法和 Windows 最新版。",
+                              "level":  "info",
+                              "publishedAt":  1795174171,
+                              "expiresAt":  1796383771,
+                              "url":  "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/docs/PROMOTION.md"
+                          },
+                          {
+                              "id":  "windows-release-1.0.28",
+                              "title":  "1.0.28 首次播放修复版",
+                              "body":  "修复首次播放准备时 CDN 跳转导致的文件下载失败，保留登录和观看记录。空缓存搜索、播放和切集，以及升级与回退已通过本轮样本验收。可在设置中检查更新，点击查看说明。",
+                              "level":  "info",
+                              "publishedAt":  1794661208,
+                              "expiresAt":  1795870808,
+                              "url":  "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.28"
+                          },
+                          {
+                              "id":  "windows-release-1.0.27",
+                              "title":  "1.0.27 免费体验：电脑追剧，接着上次看",
+                              "body":  "改善部分播放取址与中断恢复，新增离线文件检查。本机已实测搜索、1080p 切集与重开续播。部分环境仍有搜索、播放失败反馈，请查看版本说明中的已知问题；可在设置中检查更新。",
+                              "level":  "info",
+                              "publishedAt":  1794549802,
+                              "expiresAt":  1795759402,
+                              "url":  "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.27"
+                          }
+                      ]
 }
