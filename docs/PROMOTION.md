@@ -2,9 +2,9 @@
 
 更新：2026-11-25 · 维护者：渠道有数 · 第三方独立客户端
 
-## Windows 1.0.139 重大更新 · 全站界面焕新、秒开推荐与剧内公告
+## Windows 1.0.141 重大更新 · 零转码直连、零白闪切剧与智能推荐
 
-> 红果免费短剧 Windows 桌面版迎来 **1.0.139 重大更新**：全站浅/深双主题与毛玻璃视觉重做，侧栏「推荐」一键直进刷剧，支持悬停预热、切剧 HLS 预热与快滑瞬切；新增 **Ctrl+K** 快捷命令面板、重构顶部通知中心并补齐**剧内顶部公告**（全屏/清屏/小窗自动避让）。[Windows 固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest) · [本版重大更新说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.139)
+> 红果免费短剧 Windows 桌面版迎来 **1.0.141 重大更新**：新增本地内存零转码 CENC 播放代理与双视频帧级预解码，实现**零白闪顺滑切剧与切集**；升级实时推荐算法、极简浅/深双主题设计系统、**Ctrl+K** 快捷命令面板、顶部通知中心与全新应用内自动更新体验。[Windows 固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest) · [1.0.141 重大更新说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.141)
 
 ## Mac 1.0.141 重大更新 · Apple Silicon + Intel 全系双架构原生重塑
 
@@ -23,14 +23,14 @@
 
 红果桌面端由渠道有数独立维护，适用于 Windows 10/11 x64。它把找剧、收藏、选集与续看放在同一个电脑窗口中。老板键默认 Ctrl+Shift+B，隐藏时暂停、恢复后保留原位置与倍速；原本手动暂停的内容保持暂停。
 
-当前 Windows 正式版为 1.0.139。分享时请使用[固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)。
+当前 Windows 正式版为 1.0.141，Mac 双架构版为 1.0.141，Android TV 测试版为 0.5.12。分享时请使用[固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)。
 
 项目另有 Mac（Apple Silicon + Intel 双架构，macOS 13.0+）与 Android TV 测试版，系统要求和功能范围各自独立。它不是红果短剧官方出品；应用完整源码未公开。下载不需要关注、回帖或私信取包。
 
 ## 下载与参考链接
 
 - [Windows 固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)：文章优先保留这个地址，减少版本过期。
-- [1.0.139 发行说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.139)。
+- [Windows 1.0.141 发行说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.141)。
 - [Windows 安装与排错速查](WINDOWS-INSTALL.md)。
 - [Android TV 系统要求与下载](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/TV.md)。
 - [Mac 双架构安装说明与快捷键速查](../MAC.md)（[mac-v1.0.141 发布页](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.141)）。
