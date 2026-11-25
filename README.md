@@ -30,7 +30,7 @@ Windows 10 / 11 **x64（64 位）** · 安装包 **113.2 MiB**。普通使用只
 | --- | --- | --- |
 | Windows 电脑 | [Windows 固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest) | Windows 10/11 x64 |
 | Android 电视、盒子、投影 | [0.5.12 测试版 · 选 ARM32 / ARM64](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/TV.md) | Android 5.0+，按系统架构选包 |
-| Mac | [1.0.141 重大更新 · Apple Silicon / Intel 双架构](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.141) | M 系列 + Intel x86_64，macOS 13.0+，按芯片选包 |
+| Mac | [1.0.141 重大更新 · Apple Silicon / Intel 双架构](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/MAC.md) | M 系列 + Intel x86_64，macOS 13.0+，按芯片选包 |
 
 分享 Windows 下载请使用[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)；TV 和 Mac 请分享上方各自入口。无需关注、回帖或私信取包。
 
@@ -58,7 +58,7 @@ Windows 10 / 11 **x64（64 位）** · 安装包 **113.2 MiB**。普通使用只
 
 **[下载 Apple Silicon (M1–M4) DMG · 159.9 MiB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/mac-v1.0.141/hongguo-1.0.141-macos-arm64.dmg)**　｜　**[下载 Intel (x86_64) DMG · 159.4 MiB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/mac-v1.0.141/hongguo-1.0.141-macos-x64.dmg)**
 
-**[查看 mac-v1.0.141 更新说明与 SHA-256 校验](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.141)**　｜　**[反馈 Mac 问题](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/new?template=macos.yml)**　｜　[参与测试与查看进度](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/359)
+**[Mac 详细安装与快捷键指南](MAC.md)**　｜　**[mac-v1.0.141 更新说明与校验](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.141)**　｜　**[反馈 Mac 问题](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/new?template=macos.yml)**　｜　[参与测试与查看进度](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/359)
 
 请按本机芯片选包（点击左上角  →「关于本机」查看芯片/处理器）：Apple Silicon 选 `arm64`，Intel Mac 选 `x64`。当前应用为 ad-hoc 签名、尚未 Apple 公证，首次打开若提示无法验证开发者，请在「系统设置 → 隐私与安全性」中允许打开，或拖入「应用程序」后在终端执行 `xattr -cr "/Applications/红果桌面版.app"`；请核对发布页 `SHA256SUMS-mac-v1.0.141.txt`，不要关闭系统完整性保护（SIP）。
 

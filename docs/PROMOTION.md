@@ -1,11 +1,14 @@
 # 红果桌面端：可转载介绍与素材说明
 
-更新：2026-11-24 · 维护者：渠道有数 · 第三方独立客户端
+更新：2026-11-25 · 维护者：渠道有数 · 第三方独立客户端
 
 ## Windows 1.0.139 重大更新 · 全站界面焕新、秒开推荐与剧内公告
 
 > 红果免费短剧 Windows 桌面版迎来 **1.0.139 重大更新**：全站浅/深双主题与毛玻璃视觉重做，侧栏「推荐」一键直进刷剧，支持悬停预热、切剧 HLS 预热与快滑瞬切；新增 **Ctrl+K** 快捷命令面板、重构顶部通知中心并补齐**剧内顶部公告**（全屏/清屏/小窗自动避让）。[Windows 固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest) · [本版重大更新说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.139)
 
+## Mac 1.0.141 重大更新 · Apple Silicon + Intel 全系双架构原生重塑
+
+> 红果免费短剧 macOS 桌面版迎来 **1.0.141 重大更新**：同步 Windows 1.0.141 核心功能（全站新设计系统、零转码直连与瞬切推荐），按 Apple 人机界面规范重做融合标题栏、原生深/浅毛玻璃侧栏、顶部菜单栏与全套 `⌘` 快捷键（`⌘K` 命令面板、`⌘F` 保播检索、`⌘,` 居中设置弹窗、`⌘⇧D` 深浅外观切换），并**首次完整兼容 Apple Silicon（M1–M4）与 Intel（x86_64）双架构**（macOS 13.0+）。[Mac 双架构安装指南](../MAC.md) · [mac-v1.0.141 发布页与校验](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.141)
 ## Windows 摸鱼播放 · 小窗常驻，小电视随鼠标开合
 
 > 红果桌面端的两种摸鱼小窗可以切换使用。想连续看，用置顶的「迷你窗口」。想看一会儿，用「悬浮小电视」，鼠标移入展开续播，移出马上暂停并缩回图标。从普通小窗进入悬浮模式后，点返回即可切回。展开时支持四档窗口大小。
@@ -22,7 +25,7 @@
 
 当前 Windows 正式版为 1.0.139。分享时请使用[固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)。
 
-项目另有 Mac M 系列与 Android TV 测试版，系统要求和功能范围各自独立。它不是红果短剧官方出品；应用完整源码未公开。下载不需要关注、回帖或私信取包。
+项目另有 Mac（Apple Silicon + Intel 双架构，macOS 13.0+）与 Android TV 测试版，系统要求和功能范围各自独立。它不是红果短剧官方出品；应用完整源码未公开。下载不需要关注、回帖或私信取包。
 
 ## 下载与参考链接
 
@@ -30,7 +33,7 @@
 - [1.0.139 发行说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.139)。
 - [Windows 安装与排错速查](WINDOWS-INSTALL.md)。
 - [Android TV 系统要求与下载](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/TV.md)。
-- [Mac 测试版说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases#mac-公开测试版邀请-m-系列用户体验)。
+- [Mac 双架构安装说明与快捷键速查](../MAC.md)（[mac-v1.0.141 发布页](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.141)）。
 - [AI 辅助开发实践](AI-ASSISTED-CASE-STUDY.md)。
 
 ## 给第一次安装的读者
@@ -55,6 +58,16 @@
 
 [现有 42 秒实录](https://www.bilibili.com/video/BV1SbH16iECg/)录制于 Windows 1.0.10，仅用于了解老板键和倍速等基本操作，转载时请保留 1.0.10 录制版本标记。仓库现有首页图片为 1.0.2 历史实拍，也不应冒充新版。若需要当前界面，请明确版本并实际录制；不要把界面中的第三方影视内容当作自由授权素材。
 
+
+### macOS 1.0.141 双架构实拍素材
+
+![macOS 1.0.141 Intel 浅色首页](../assets/macos-1.0.141-intel-light.png)
+
+![macOS 1.0.141 Intel 深色首页](../assets/macos-1.0.141-intel-dark.png)
+
+![macOS 1.0.141 Command+K 快捷命令面板](../assets/macos-1.0.141-cmdk.png)
+
+[Intel 浅色图](../assets/macos-1.0.141-intel-light.png) · [Intel 深色图](../assets/macos-1.0.141-intel-dark.png) · [⌘K 面板图](../assets/macos-1.0.141-cmdk.png) · [⌘, 设置弹窗图](../assets/macos-1.0.141-settings.png)。以上 4 张截图均为 **macOS 1.0.141 云端双架构真机实拍**，转载时请保留版本标注与原发行页链接；图中第三方影视封面归各自权利方所有。
 应用尚未配置 Windows 发布者代码签名，可能出现未知发布者提示；请核对项目来源和文件，不要建议关闭系统保护。内容与播放可用性受设备、网络和上游状态影响。
 
 可摘编本页项目介绍并保留维护者署名、第三方身份和固定下载链接。转载不代表官方合作。请勿将下载次数改称用户数、活跃人数或营收，也勿添加“全网免费看”“永久免费”“所有故障已修复”等本项目未作出的承诺。
