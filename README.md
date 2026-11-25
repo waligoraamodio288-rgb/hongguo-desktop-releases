@@ -4,9 +4,9 @@
 
 在 Windows 电脑上找剧、接着上次看。支持搜索、收藏、本机观看进度、选集、倍速和自动连播。
 
-**由渠道有数独立维护 · 免费使用 · Windows 1.0.141 · Mac 1.0.141 双架构 · Android TV 0.5.12**
+**由渠道有数独立维护 · 免费使用 · Windows 正式版 · Mac 1.0.141 双架构 · Android TV 0.5.12**
 
-**[下载 Windows 最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)** · [当前版 1.0.141 安装包](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/v1.0.141/hongguo-1.0.141-windows-x86_64-setup.exe) · [安装和排错](docs/WINDOWS-INSTALL.md) · [全部版本](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases)
+**[下载 Windows 最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)** · [安装和排错](docs/WINDOWS-INSTALL.md) · [全部版本](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases)
 
 [渠道有数网站](https://shiyuemenghui.top/?utm_source=github&utm_medium=readme&utm_campaign=custom_domain) 在部分网络下暂时打不开。Windows 下载、安装和升级可使用上面的 GitHub 链接。
 
@@ -14,7 +14,7 @@
 
 [☕ 自愿支持维护](docs/SUPPORT.md) · 最近更新与后续维护重点，均可免费查看。
 
-Windows 10 / 11 **x64（64 位）** · 安装包 **113.4 MiB**。普通使用只需下载 `.exe`，不需要下载源码 ZIP、`.sig` 或 `latest.json`。
+Windows 10 / 11 **x64（64 位）**。安装包大小以发行页附件为准。普通使用只需下载 `.exe`，不需要下载源码 ZIP、`.sig` 或 `latest.json`。
 
 ## 摸鱼播放
 
@@ -43,7 +43,7 @@ Windows 10 / 11 **x64（64 位）** · 安装包 **113.4 MiB**。普通使用只
 - **遇到中断有恢复入口**：首次准备已取得有效结果但本地保存失败时，保留加密结果供后续重试或重开恢复，避免重复初始化。
 - **更新与通知**：软件内检查更新，公告横幅提供版本说明和使用提醒。
 
-**[下载 Windows 最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)** · **[查看更新与已知问题](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.141)** · [反馈问题](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/new?template=bug-report.yml)
+**[下载 Windows 最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)** · **[查看全部更新](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases)** · [反馈问题](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/new?template=bug-report.yml)
 
 本次验证范围：Windows 原生播放器实测四档窗口尺寸与再次展开，核对首页、播放器打赏码及离线显示。正式安装包通过独立环境新装、从 1.0.67 升级及回退，核对收藏、历史、进度与账号文件保留。
 
@@ -119,13 +119,13 @@ Windows 10 / 11 **x64（64 位）** · 安装包 **113.4 MiB**。普通使用只
 
 ## 旧版无法播放，先检查哪个版本？
 
-Windows 用户可先在设置里核对版本。当前正式版为 1.0.141；旧版用户请通过[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)获取当前安装包。这个修复不代表所有网络、设备或剧集都能正常播放。更新后仍失败，请按上面的“播放中断时”步骤反馈版本、屏幕提示和换剧结果。
+Windows 用户可先在设置里核对版本，再到[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)查看当前版本和安装包。更新后仍失败，请按上面的“播放中断时”步骤反馈版本、屏幕提示和换剧结果。
 
 电视、盒子和平板请使用上方 Android TV 入口；真人剧、漫剧和 AI剧（AI 剧）分类独立，当前0.5.12提供ARM32与ARM64两种安装包。Windows 安装程序不能安装到电视。
 
 ## 版本变化与已知反馈
 
-**当前 1.0.141（全端重大更新）**。Windows 升级零转码直连 CENC 播放、零白闪切剧、实时推荐算法升级与全新自动更新弹窗；macOS 1.0.141 同步全功能并首次兼容 Apple Silicon + Intel 双架构。[Windows 1.0.141 说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.141) · [Mac 1.0.141 说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.141) · [历史 1.0.139](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.139)。
+**1.0.141 全端更新**。Windows 升级零转码直连 CENC 播放、零白闪切剧、实时推荐算法升级与全新自动更新弹窗；macOS 1.0.141 同步全功能并首次兼容 Apple Silicon + Intel 双架构。[Windows 1.0.141 说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.141) · [Mac 1.0.141 说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.141) · [历史 1.0.139](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.139)。
 
 **1.0.51（历史）：** 修复下载断点记录不一致与手机进度同步回执容量问题，改善评论图片查看和全屏按钮遮挡。
 
