@@ -2,13 +2,13 @@
   "app_id": "cn.guoban.desktop-companion",
   "announcements": [
     {
-      "id": "windows-release-1.0.142-major",
-      "title": "重大版本更新 1.0.142 已发布 · 请立即自动升级体验零白闪秒开",
-      "body": "本次为重大版本升级（已修复播放画面偏移）：新增零转码直连秒开与零白闪顺滑切剧、对标竞品的实时智能推荐与极简设置页、首屏启动大幅提速，并全新升级应用内自动更新弹窗与进度体验。请点击右下角更新卡片，或打开右上角通知中心「软件更新」/ 设置页一键自动升级（完整保留账号、收藏与观看进度）。",
+      "id": "windows-release-1.0.143-major",
+      "title": "重大版本更新 1.0.143 已发布 · 请立即自动升级体验零白闪秒开",
+      "body": "本次为重大版本升级（彻底修复剧内公告导致的播放画面偏移）：新增零转码直连秒开与零白闪顺滑切剧、对标竞品的实时智能推荐与极简设置页、首屏启动大幅提速，并全新升级应用内自动更新弹窗与进度体验。请点击右下角更新卡片，或打开右上角通知中心「软件更新」/ 设置页一键自动升级（完整保留账号、收藏与观看进度）。",
       "level": "warning",
-      "publishedAt": 1795580601,
-      "expiresAt": 1798172661,
-      "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.142"
+      "publishedAt": 1795581682,
+      "expiresAt": 1798173742,
+      "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.143"
     },
     {
       "id": "macos-release-1.0.141-dual-arch",
