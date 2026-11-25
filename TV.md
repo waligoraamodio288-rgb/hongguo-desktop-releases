@@ -6,6 +6,8 @@
 
 网站暂有部分网络无法访问；遇到打不开时，可直接使用下方 GitHub 安装包和本页说明。
 
+**国内免梯子直连通道**：[腾讯文档统一导航卡（微信直开）](https://docs.qq.com/doc/DUkFVbUNJQnhtVkd6) · [百度网盘永久分流（提取码 `3kx4`）](https://pan.baidu.com/s/1rgL9oqPRH7BSLxXDV29feA?pwd=3kx4) · [Gitee 国内镜像页](https://gitee.com/wang-jue12342/hongguo-desktop-releases)
+
 **[下载32位 ARMv7 · 1.39 MB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/tv-v0.5.12/HongguoTV-0.5.12-arm32.apk)**　｜　**[下载64位 ARM64 · 4.22 MB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/tv-v0.5.12/HongguoTV-0.5.12-arm64.apk)**　｜　[发行说明与校验](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/tv-v0.5.12)
 
 适用于Android5.0+的电视、盒子、投影和平板。32位系统选择ARMv7，64位系统选择ARM64；以系统支持的ABI为准，不按芯片宣传位数判断。

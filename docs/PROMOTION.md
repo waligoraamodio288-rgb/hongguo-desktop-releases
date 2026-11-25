@@ -29,6 +29,10 @@
 
 ## 下载与参考链接
 
+- [国内免梯子统一导航卡（腾讯文档，微信直开）](https://docs.qq.com/doc/DUkFVbUNJQnhtVkd6)：汇总全端下载、安装教程与 SHA-256 校验。
+- [百度网盘永久分流（提取码 `3kx4`）](https://pan.baidu.com/s/1rgL9oqPRH7BSLxXDV29feA?pwd=3kx4)：国内免梯子直下全端安装包。
+- [Gitee 国内公开镜像仓库](https://gitee.com/wang-jue12342/hongguo-desktop-releases)：国内高速访问项目首页与更新日志。
+
 - [Windows 固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)：文章优先保留这个地址，减少版本过期。
 - [Windows 1.0.141 发行说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.141)。
 - [Windows 安装与排错速查](WINDOWS-INSTALL.md)。
