@@ -13,11 +13,11 @@
     {
       "id": "macos-release-1.0.141-dual-arch",
       "title": "Mac 1.0.141 重大更新已发布 · Apple Silicon + Intel 全系双架构原生支持",
-      "body": "macOS 端已同步 1.0.141 核心功能，按苹果规范重做融合标题栏、深浅自适应毛玻璃侧栏与 ⌘K / ⌘, / ⌘F 全套快捷键，首次同时提供 M 系列（arm64）与 Intel（x64）双架构独立 DMG（macOS 13.0+）。欢迎有 Mac 的朋友下载体验与反馈，点击查看安装指南与校验信息。",
+      "body": "macOS 端已同步 1.0.141 核心功能，按苹果规范重做融合标题栏、深浅自适应毛玻璃侧栏与 ⌘K / ⌘, / ⌘F 全套快捷键，首次同时提供 M 系列（arm64）与 Intel（x64）双架构独立 DMG（macOS 13.0+）。国内免梯子统一导航卡（含百度网盘永久分流与 Gitee 镜像）：https://docs.qq.com/doc/DUkFVbUNJQnhtVkd6",
       "level": "info",
       "publishedAt": 1795579097,
       "expiresAt": 1798171097,
-      "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/MAC.md"
+      "url": "https://docs.qq.com/doc/DUkFVbUNJQnhtVkd6"
     },
     {
       "id": "windows-release-1.0.139-ui",
