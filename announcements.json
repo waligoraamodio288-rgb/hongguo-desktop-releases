@@ -2,6 +2,15 @@
   "app_id": "cn.guoban.desktop-companion",
   "announcements": [
     {
+      "id": "macos-release-1.0.141-dual-arch",
+      "title": "Mac 1.0.141 重大更新已发布 · Apple Silicon + Intel 全系双架构原生支持",
+      "body": "macOS 端已同步 1.0.141 核心功能，按苹果规范重做融合标题栏、深浅自适应毛玻璃侧栏与 ⌘K / ⌘, / ⌘F 全套快捷键，首次同时提供 M 系列（arm64）与 Intel（x64）双架构独立 DMG（macOS 13.0+）。欢迎有 Mac 的朋友下载体验与反馈，点击查看安装指南与校验信息。",
+      "level": "info",
+      "publishedAt": 1795579097,
+      "expiresAt": 1798171097,
+      "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/MAC.md"
+    },
+    {
       "id": "windows-release-1.0.141-major",
       "title": "重大版本更新 1.0.141 已发布 · 请立即自动升级体验零白闪秒开",
       "body": "本次为重大版本升级：新增零转码直连秒开与零白闪顺滑切剧、对标竞品的实时智能推荐与极简设置页、首屏启动大幅提速，并全新升级应用内自动更新弹窗与进度体验。请点击右下角更新卡片，或打开右上角通知中心「软件更新」/ 设置页一键自动升级（完整保留账号、收藏与观看进度）。",
