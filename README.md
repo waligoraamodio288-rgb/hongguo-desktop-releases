@@ -1,12 +1,10 @@
-# 红果短剧全端版｜Windows 正式版、Mac 双架构与 Android TV
+# 红果桌面端（红果短剧电脑版）｜Windows、Mac 与 Android TV
 
-> **全端重大更新已上线（Windows 1.0.141 · Mac 1.0.143 Apple Silicon/Intel 双架构 · Android TV 0.5.12）**。Windows 与 Mac 同步升级零转码直连 CENC 播放、零白闪切剧、实时智能推荐与全新浅/深双主题；Mac 首次完整覆盖 M 系列与老款 Intel 芯片。[Windows 1.0.141 更新说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.141) · [Mac 1.0.143 双架构指南](MAC.md) · [Android TV 0.5.12](TV.md)。
+红果桌面端是「渠道有数」独立维护的免费第三方红果短剧客户端。Windows 10 / 11 x64 电脑无需安卓模拟器，即可搜索剧名、选集、收藏和从本机历史继续观看。相关品牌与内容归各自权利方所有。
 
-在 Windows 电脑上找剧、接着上次看。支持搜索、收藏、本机观看进度、选集、倍速和自动连播。
+**[下载 Windows 最新版 Setup](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)** · [Windows 安装与排错](docs/WINDOWS-INSTALL.md) · [Mac 下载（M 系列及 Intel）](MAC.md) · [Android TV 下载（电视、盒子）](TV.md)
 
-**由渠道有数独立维护 · 免费使用 · Windows 正式版 · Mac 1.0.143 双架构 · Android TV 0.5.12**
-
-**[下载 Windows 最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)** · [安装和排错](docs/WINDOWS-INSTALL.md) · [全部版本](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases)
+Windows 用户打开最新版发行页，下载文件名以 `-setup.exe` 结尾的安装包。分享本项目时可核对发行仓库账号 `waligoraamodio288-rgb/hongguo-desktop-releases`，或直接分享[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)。
 
 [渠道有数网站](https://shiyuemenghui.top/?utm_source=github&utm_medium=readme&utm_campaign=custom_domain) 在部分网络下暂时打不开。Windows 下载、安装和升级可使用上面的 GitHub 链接。
 
@@ -35,6 +33,12 @@ Windows 10 / 11 **x64（64 位）**。安装包大小以发行页附件为准。
 | Mac | [1.0.143 修复版 · Apple Silicon / Intel 双架构](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/MAC.md) | M 系列 + Intel x86_64，macOS 13.0+，按芯片选包 |
 
 分享 Windows 下载请使用[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)；TV 和 Mac 请分享上方各自入口。无需关注、回帖或私信取包。
+
+## 下载前常见问题
+
+**电脑上怎么看红果短剧？** Windows 10 / 11 x64 可以直接运行桌面版，无需安卓模拟器。请从[固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)下载 Setup，装好后按[首次使用步骤](docs/WINDOWS-INSTALL.md#装好后怎么在电脑上开始看)搜索剧名和选集。
+
+**怎么辨认是渠道有数维护的红果桌面端？** 核对 GitHub 上的发行仓库账号 `waligoraamodio288-rgb/hongguo-desktop-releases`。本项目是第三方客户端。遇到转载写着旧版本，也可以用固定最新版链接检查当前版本与附件。
 
 ## Windows 版的其他功能
 
@@ -189,13 +193,7 @@ v1.0.3 新增热播榜按需加载、播放服务未就绪时的明确提示，�
 
 当前版本尚未配置 Windows 发布者代码签名，系统可能显示未知发布者或 SmartScreen 提示。请核对下载来源与文件，不要关闭系统防护；某些系统策略可能限制安装。
 
-Windows 1.0.141 安装器大小：`118936604` 字节。SHA-256：
-
-```text
-
-fdd6df304f41e01ea1a30215c74701ff2dfb2bbef391a1d13522d9aed6738220
-
-```
+Windows 安装包大小与 SHA-256 请在[固定最新版发行页](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)按同版本附件核对。
 
 摘要用于核对文件一致性，不能代替发布者身份认证。应用内更新使用固定公钥验证更新包签名；更新签名与 Windows 发布者代码签名不同。软件启动后可以检查版本，也可在设置中手动检查，仅在用户点击更新后下载安装。
 

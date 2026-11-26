@@ -1,8 +1,8 @@
-# 红果电脑版下载与安装｜Windows 10 / 11 x64
+# 红果短剧电脑版下载与安装｜红果桌面端 Windows 指南
 
 [打开 Windows 固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest) · [项目首页](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases) · [反馈安装或播放问题](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/new?template=bug-report.yml)
 
-红果桌面端是渠道有数独立维护的免费第三方客户端。可在电脑上找剧、选集、收藏和接着本机进度看。此页适用于 Windows 10 / 11 的 x64 电脑。
+红果桌面端是「渠道有数」独立维护的免费第三方客户端。Windows 10 / 11 x64 电脑无需安卓模拟器，可以找剧、选集、收藏和从本机历史继续观看。下载时请核对发行仓库账号 `waligoraamodio288-rgb/hongguo-desktop-releases`。
 
 ## 首次安装，选哪个文件？
 
