@@ -2,6 +2,17 @@
   "app_id": "cn.guoban.desktop-companion",
   "announcements": [
     {
+      "id": "win-1-0-146-feedback-polish",
+      "title": "Windows 1.0.146 专项修复版已发布 · 建议立即自动更新",
+      "summary": "重构离线批量重试（120+ 集秒提交不卡顿）、批量删除遇占用自动跳过续删、修复连播画质回退提示与覆盖升级残留，请点击「设置 → 更新」一键升级。",
+      "body": "本版本针对近期 Windows 反馈集中修复：\n1. 离线批量「重试失败」改为单次原子批处理，彻底解决 60–120 集卡死提示「离线列表暂未更新」及重试中点播冲突；\n2. 离线批量删除遇到外部程序持续占用时自动跳过并继续清理剩余剧集；\n3. 修复连续播放偶发「所选画质暂时无法播放」跨集回退与档位匹配，完成态提示 5 秒自动消隐；\n4. 安装器覆盖升级前自动清理旧版后端缓存，与卸载重装完全一致且 100% 保留数据。",
+      "level": "warning",
+      "placement": "all",
+      "publishedAt": "2026-11-26T13:46:52Z",
+      "linkLabel": "查看 1.0.146 更新详情",
+      "linkUrl": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.146"
+    },
+    {
       "id": "windows-release-1.0.145-feedback",
       "title": "Windows 1.0.145 反馈修复版已发布 · 修复代理劫持、弹幕、外链与全屏缝隙",
       "body": "本版本针对近期反馈一次性修复：豁免系统代理对本机回环服务的劫持、修复稀疏弹幕剧集无弹幕、修复反馈按钮误开文档文件夹、修复 125% 缩放全屏残留缝隙，并增强离线批量删除抗占用重试与补零导出命名（001.mp4 / 剧名_001.mp4）。可在右下角更新卡、通知中心「软件更新」或设置页一键升级。",
@@ -55,5 +66,6 @@
       "expiresAt": 1795759402,
       "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.27"
     }
-  ]
+  ],
+  "updatedAt": "2026-11-26T13:46:52Z"
 }
