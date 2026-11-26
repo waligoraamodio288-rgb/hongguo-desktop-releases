@@ -1,8 +1,8 @@
 # 红果桌面版 macOS：Apple Silicon + Intel 全系双架构原生体验
 
-由 **渠道有数** 独立维护 · 免费使用 · **Mac 1.0.142 重大更新（macOS 13.0+）**
+由 **渠道有数** 独立维护 · 免费使用 · **Mac 1.0.143 更新（修复回环代理与播放取流 · macOS 13.0+）**
 
-**[下载 Apple Silicon (M1–M4) DMG · 159.9 MiB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/mac-v1.0.142/hongguo-1.0.142-macos-arm64.dmg)**　｜　**[下载 Intel (x86_64) DMG · 159.4 MiB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/mac-v1.0.142/hongguo-1.0.142-macos-x64.dmg)**　｜　[发行说明与 SHA-256 校验](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.142)
+**[下载 Apple Silicon (M1–M4) DMG · 173.0 MiB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/mac-v1.0.143/hongguo-1.0.143-macos-arm64.dmg)**　｜　**[下载 Intel (x86_64) DMG · 173.3 MiB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/mac-v1.0.143/hongguo-1.0.143-macos-x64.dmg)**　｜　[发行说明与 SHA-256 校验](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.143)
 
 **国内免梯子直连通道**：[腾讯文档统一导航卡（微信直开）](https://docs.qq.com/doc/DUkFVbUNJQnhtVkd6) · [百度网盘永久分流（提取码 `3kx4`）](https://pan.baidu.com/s/1rgL9oqPRH7BSLxXDV29feA?pwd=3kx4) · [Gitee 国内镜像页](https://gitee.com/wang-jue12342/hongguo-desktop-releases)
 
@@ -49,7 +49,7 @@
 
 ## 三步安装与首次打开说明
 
-1. 根据本机芯片下载 `hongguo-1.0.142-macos-arm64.dmg`（M 系列）或 `hongguo-1.0.142-macos-x64.dmg`（Intel），并可对照发布页 [SHA256SUMS-mac-v1.0.142.txt](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/mac-v1.0.142/SHA256SUMS-mac-v1.0.142.txt) 核对完整性。
+1. 根据本机芯片下载 `hongguo-1.0.143-macos-arm64.dmg`（M 系列）或 `hongguo-1.0.143-macos-x64.dmg`（Intel），并可对照发布页 [SHA256SUMS-mac-v1.0.143.txt](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/mac-v1.0.143/SHA256SUMS-mac-v1.0.143.txt) 核对完整性。
 2. 双击 DMG，将应用拖入 **Applications（应用程序）** 文件夹。
 3. **首次打开放行（必读）**：当前版本为 ad-hoc 签名、暂未经过 Apple 官方付费公证。首次打开若提示「无法验证开发者」或「已损坏」，**不要关闭系统完整性保护（SIP）**，请任选以下一种标准方式放行：
    - **图形界面**：打开「系统设置 → 隐私与安全性」，在底部安全提示处点击「仍要打开」；
@@ -61,15 +61,15 @@
 
 ### SHA-256 校验值
 
-- `hongguo-1.0.142-macos-arm64.dmg`（`167,626,077` 字节 / 159.9 MiB）：
-  `e9829689781fd753c4e87c3f25c9b76eed3df1c1e5991ee2c9e358fa886f91d1`
-- `hongguo-1.0.142-macos-x64.dmg`（`167,150,259` 字节 / 159.4 MiB）：
-  `329b96035664fc2036cd2ac3e0e07d38997da68d1048fca86b3d01eedd1e95b3`
+- `hongguo-1.0.143-macos-arm64.dmg`（`181,425,581` 字节 / 173.0 MiB）：
+  `ea8fee864eed6fb30650e0a69297e06423dde87520730306d4039edcd709ea2b`
+- `hongguo-1.0.143-macos-x64.dmg`（`181,704,896` 字节 / 173.3 MiB）：
+  `5eb6eb160ec3046fbc854413bb2b5c112dd44428fd5f30a4f6a42ea463d1362e`
 
 ## 验证边界与反馈入口
 
-- **已完成验证**：已在云端 Apple Silicon（macOS 26.7.2）与 Intel x86_64（macOS 15.7.9）双架构真机完成打包，分别通过 69 项前端单测、415 项 Rust 单元测试、内置后端冷启动握手、封面实时解码与浅/深色窗口实拍验证（Intel 额外通过 Unicorn 2.1.4 原生仿真自检）。
+- **已完成验证**：1.0.143 已在云端 Apple Silicon（macOS ARM64）与 Intel x86_64 双架构真机完成打包，除 69 项前端单测、415 项 Rust 单元测试、冷启动握手与浅/深色窗口实拍外，已新增并通过 29/29 账号校验、毒代理下本机回环签名免代理直通，以及 Unicorn 2.1.4 + 本地校验种子空白配置实测《穿越八零》第 6 集取流（`code=0`，5 条可播轨道）。
 - **待真机用户补充验证**：物理扬声器真实出声、长时间连续播放、短信登录恢复与旧版覆盖升级。Mac 版暂未接入应用内自动更新，需手动下载新版 DMG 覆盖安装；本机观看记录与 Windows / TV 端独立保存。
 - **问题反馈**：请填写 [Mac 专属反馈表](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/new?template=macos.yml)（注明芯片型号、macOS 版本与复现步骤，勿提交账号凭据），或关注 [Mac 社区追踪帖 #359](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/359)。
 
-分享时请保留 **渠道有数** 署名与 [原发行页链接](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.142)。需要 Windows 或电视版请返回 [项目首页](README.md)。
+分享时请保留 **渠道有数** 署名与 [原发行页链接](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.143)。需要 Windows 或电视版请返回 [项目首页](README.md)。
