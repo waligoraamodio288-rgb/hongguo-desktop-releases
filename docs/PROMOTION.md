@@ -6,9 +6,9 @@
 
 > 红果免费短剧 Windows 桌面版迎来 **1.0.141 重大更新**：新增本地内存零转码 CENC 播放代理与双视频帧级预解码，实现**零白闪顺滑切剧与切集**；升级实时推荐算法、极简浅/深双主题设计系统、**Ctrl+K** 快捷命令面板、顶部通知中心与全新应用内自动更新体验。[Windows 固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest) · [1.0.141 重大更新说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.141)
 
-## Mac 1.0.141 重大更新 · Apple Silicon + Intel 全系双架构原生重塑
+## Mac 1.0.142 重大更新 · Apple Silicon + Intel 全系双架构原生重塑
 
-> 红果免费短剧 macOS 桌面版迎来 **1.0.141 重大更新**：同步 Windows 1.0.141 核心功能（全站新设计系统、零转码直连与瞬切推荐），按 Apple 人机界面规范重做融合标题栏、原生深/浅毛玻璃侧栏、顶部菜单栏与全套 `⌘` 快捷键（`⌘K` 命令面板、`⌘F` 保播检索、`⌘,` 居中设置弹窗、`⌘⇧D` 深浅外观切换），并**首次完整兼容 Apple Silicon（M1–M4）与 Intel（x86_64）双架构**（macOS 13.0+）。[Mac 双架构安装指南](../MAC.md) · [mac-v1.0.141 发布页与校验](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.141)
+> 红果免费短剧 macOS 桌面版迎来 **1.0.141 重大更新**：同步 Windows 1.0.141 核心功能（全站新设计系统、零转码直连与瞬切推荐），按 Apple 人机界面规范重做融合标题栏、原生深/浅毛玻璃侧栏、顶部菜单栏与全套 `⌘` 快捷键（`⌘K` 命令面板、`⌘F` 保播检索、`⌘,` 居中设置弹窗、`⌘⇧D` 深浅外观切换），并**首次完整兼容 Apple Silicon（M1–M4）与 Intel（x86_64）双架构**（macOS 13.0+）。[Mac 双架构安装指南](../MAC.md) · [mac-v1.0.142 发布页与校验](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.142)
 ## Windows 摸鱼播放 · 小窗常驻，小电视随鼠标开合
 
 > 红果桌面端的两种摸鱼小窗可以切换使用。想连续看，用置顶的「迷你窗口」。想看一会儿，用「悬浮小电视」，鼠标移入展开续播，移出马上暂停并缩回图标。从普通小窗进入悬浮模式后，点返回即可切回。展开时支持四档窗口大小。
@@ -37,7 +37,7 @@
 - [Windows 1.0.141 发行说明](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.141)。
 - [Windows 安装与排错速查](WINDOWS-INSTALL.md)。
 - [Android TV 系统要求与下载](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/TV.md)。
-- [Mac 双架构安装说明与快捷键速查](../MAC.md)（[mac-v1.0.141 发布页](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.141)）。
+- [Mac 双架构安装说明与快捷键速查](../MAC.md)（[mac-v1.0.142 发布页](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.142)）。
 - [AI 辅助开发实践](AI-ASSISTED-CASE-STUDY.md)。
 
 ## 给第一次安装的读者

@@ -12,12 +12,12 @@
     },
     {
       "id": "macos-release-1.0.141-dual-arch",
-      "title": "Mac 1.0.141 重大更新已发布 · Apple Silicon + Intel 全系双架构原生支持",
-      "body": "macOS 端已同步 1.0.141 核心功能，按苹果规范重做融合标题栏、深浅自适应毛玻璃侧栏与 ⌘K / ⌘, / ⌘F 全套快捷键，首次同时提供 M 系列（arm64）与 Intel（x64）双架构独立 DMG（macOS 13.0+）。国内免梯子统一导航卡（含百度网盘永久分流与 Gitee 镜像）：https://docs.qq.com/doc/DUkFVbUNJQnhtVkd6",
+      "title": "Mac 1.0.142 修复版已发布 · 修复本机账号状态无法读取（M系列 + Intel）",
+      "body": "已修复 Mac 1.0.141 双架构安装包中账号校验清单漏更新导致的「读取本机账号状态失败」问题，Apple Silicon 与 Intel 两个 DMG 均已通过 29/29 校验与空白配置实测，建议 Mac 用户覆盖升级至 1.0.142。发布页与安装指南：https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.142",
       "level": "info",
       "publishedAt": 1795579097,
       "expiresAt": 1798171097,
-      "url": "https://docs.qq.com/doc/DUkFVbUNJQnhtVkd6"
+      "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.142"
     },
     {
       "id": "windows-release-1.0.139-ui",
