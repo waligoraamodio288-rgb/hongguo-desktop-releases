@@ -29,7 +29,7 @@ Windows 10 / 11 **x64（64 位）**。安装包大小以发行页附件为准。
 | 你的设备 | 当前版本与入口 | 安装前确认 |
 | --- | --- | --- |
 | Windows 电脑 | [Windows 固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest) | Windows 10/11 x64 |
-| Android 电视、盒子、投影 | [0.5.12 测试版 · 选 ARM32 / ARM64](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/TV.md) | Android 5.0+，按系统架构选包 |
+| Android 电视、盒子、投影 | [0.5.18 重大更新 · 选 ARM32 / ARM64](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/TV.md) | Android 5.0+，按系统架构选包 |
 | Mac | [1.0.143 修复版 · Apple Silicon / Intel 双架构](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/MAC.md) | M 系列 + Intel x86_64，macOS 13.0+，按芯片选包 |
 
 分享 Windows 下载请使用[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)；TV 和 Mac 请分享上方各自入口。无需关注、回帖或私信取包。
@@ -53,7 +53,7 @@ Windows 10 / 11 **x64（64 位）**。安装包大小以发行页附件为准。
 
 **已知反馈（2026-11-17）**：[#1432](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/1432) 所涉及的旧原生签名器现已修复一条实证的 CFG 返回崩溃路径；尚未在反馈者同型 Windows 11 x64 机器复核，不能视为其所有异常均已解决。[#1434](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/1434) 的失败注册阻塞已加入手动恢复。遇到问题请附系统、版本、剧名和集数，不要提交账号凭据或删除用户资料。
 
-[观看旧版 42 秒操作演示：老板键与 3 倍速](https://www.bilibili.com/video/BV1SbH16iECg/)（录制版本 1.0.10，仅用于了解基本操作；以当前界面为准）。Windows 与 Android TV 的本机进度各自保存，TV 暂不跨设备同步。
+[观看旧版 42 秒操作演示：老板键与 3 倍速](https://www.bilibili.com/video/BV1SbH16iECg/)（录制版本 1.0.10，仅用于了解基本操作；以当前界面为准）。Windows 与 Android TV 现均支持登录红果账号同步云端收藏与观看历史（未登录时仍各自独立保存在本机）。
 
 <!-- mac-beta-promotion-start -->
 ## Mac 版重大更新（1.0.143 · 已修回环代理与播放取流）：Apple Silicon + Intel 全系双架构原生支持
@@ -73,15 +73,15 @@ Windows 10 / 11 **x64（64 位）**。安装包大小以发行页附件为准。
 
 ## 电视、盒子、投影与平板
 
-**0.5.12 测试版 · ARM32 / ARM64 · Android5.0+**
+**0.5.18 重大更新 · ARM32 / ARM64 · Android 5.0+**
 
-**[下载32位 ARMv7 · 1.39 MB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/tv-v0.5.12/HongguoTV-0.5.12-arm32.apk)** ｜ **[下载64位 ARM64 · 4.22 MB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/tv-v0.5.12/HongguoTV-0.5.12-arm64.apk)**
+**[下载32位 ARMv7 · 2.78 MB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/tv-v0.5.18/HongguoTV-0.5.18-arm32.apk)** ｜ **[下载64位 ARM64 · 10.13 MB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/tv-v0.5.18/HongguoTV-0.5.18-arm64.apk)** ｜ **[0.5.18 更新说明与校验](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/tv-v0.5.18)**
 
-0.5.12 新增连续看推荐、本机搜索直接续看，以及真人剧、漫剧和 AI 剧各自恢复题材与剧卡。小米 Android 13 平板的 ARM32、ARM64 进程通过在线推荐换剧、取消、失败恢复和退出回归。TCL Android 9 电视仍待复测。
+0.5.18 同步最新 V5 主片源播放恢复，并一次性带来多项核心体验升级：新增桌面同款沉浸式「✦ 推荐」与首页推荐偏好、支持手机红果 App 扫码登录及云端收藏/历史同步、加入极简低开销电视弹幕与开关调节、升级空闲后台自动更新并校验原版签名，同时在首页与播放器加入自愿打赏作者入口。已在小米 Android 13 平板 ARM64 / ARM32 进程完成全套 11 项功能验收，旧款实体电视仍待逐机反馈。
 
-保持单播放器、单媒体工作线程、两槽缓存、单文件32MiB上限及64KiB分块下载；低内存自动最高480p，内存紧张时取消预取并释放封面。没有新增软件解码器或转码服务。若某集只有高清轨道，手动限制720p或低内存480p可能无法播放；性能充足且硬解支持的设备可尝试自动或1080p。
+继续保持单播放器、单媒体工作线程、两槽缓存、单文件 32 MiB 上限及 64 KiB 分块下载；低内存自动最高 480p，内存紧张时取消预取并释放封面，不增加后台转码服务。若某集只有高清轨道，手动限制 720p 或低内存 480p 可能无法播放；性能充足且硬解支持的设备可尝试自动或 1080p。
 
-首次搜索需同意本机设备登记，AI搜索仅筛选热门片单。
+首次搜索需同意本机设备登记，AI 搜索仅筛选热门片单。
 
 [电视版安装与实测范围](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/TV.md) · [反馈设备体验](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/new?template=android-tv.yml)
 
@@ -125,7 +125,7 @@ Windows 10 / 11 **x64（64 位）**。安装包大小以发行页附件为准。
 
 Windows 用户可先在设置里核对版本，再到[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)查看当前版本和安装包。更新后仍失败，请按上面的“播放中断时”步骤反馈版本、屏幕提示和换剧结果。
 
-电视、盒子和平板请使用上方 Android TV 入口；真人剧、漫剧和 AI剧（AI 剧）分类独立，当前0.5.12提供ARM32与ARM64两种安装包。Windows 安装程序不能安装到电视。
+电视、盒子和平板请使用上方 Android TV 入口；真人剧、漫剧和 AI剧（AI 剧）分类独立，当前 0.5.18 提供 ARM32 与 ARM64 两种安装包。Windows 安装程序不能安装到电视。
 
 ## 版本变化与已知反馈
 
