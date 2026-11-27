@@ -3,11 +3,11 @@
   "announcements": [
     {
       "id": "tv-release-0.5.20",
-      "title": "红果电视端 0.5.20 修复版已发布 · 彻底修复扫码登录与支持 32 位播放",
-      "body": "Android TV / 电视盒子版已更新至 0.5.20（ARM32 8.69 MB / ARM64 10.15 MB）：1. 修复 `0.5.19` 二维码格式校验位转置与白底正方形框右侧裁切两处缺陷（已通过第三方 `jsQR` 整图直接解码还原官方登录链接），彻底解决手机红果 App 扫码识别失败；2. 延续 32 位系统内置轻量化 ARM64 指令仿真引擎执行 V5 主片源签名，修复老电视起播报错；3. 保留「✦ 推荐」连刷、云端收藏/历史同步、极简弹幕与闲时自动更新。",
-      "level": "info",
-      "publishedAt": 1795782888,
-      "expiresAt": 1798374888,
+      "title": "红果电视端 0.5.20 全面发布 · 真电视实测可播可扫码，老版本应用内已提示升级",
+      "body": "Android TV / 电视盒子版已更新至 0.5.20（ARM32 8.69 MB / ARM64 10.15 MB），已在 32 位实体电视实测确认正常起播且手机红果 App 扫码登录成功！1. 彻底修复 0.5.19 二维码格式校验位转置与白框右侧裁切缺陷；2. 32 位包内置轻量化 ARM64 仿真引擎直接执行 V5 主片源签名；3. 已安装 0.5.2–0.5.19（64 位）或 0.5.6–0.5.19（32 位）的用户打开电视端即可直接收到升级提示一键更新。",
+      "level": "warning",
+      "publishedAt": 1795783905,
+      "expiresAt": 1798375905,
       "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/tv-v0.5.20"
     },
     {
@@ -122,5 +122,5 @@
       "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.28"
     }
   ],
-  "updatedAt": "2026-11-27T12:34:48Z"
+  "updatedAt": "2026-11-27T12:51:45Z"
 }
