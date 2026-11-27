@@ -2,6 +2,17 @@
   "app_id": "cn.guoban.desktop-companion",
   "announcements": [
     {
+      "id": "win-1-0-150-fix-local-429",
+      "title": "Windows 1.0.150 紧急修复版已发布 · 彻底解决连刷切剧 HTTP 429 报错",
+      "summary": "解除本机回环流媒体路由（/desktop/cenc/*、/desktop/hls）的 120/分钟误限流，连续快速切剧与并发预热不再出现「创建播放任务失败（HTTP 429）」，建议立即自动更新。",
+      "body": "本版本修复快速连刷推荐或频繁拖动切剧时弹出「创建播放任务失败（HTTP 429）」的问题：\n1. 对本机已鉴权桌面会话彻底豁免 CENC 分片流与 HLS 播放任务创建路由的本地计数限流；\n2. 桌面本地接口限流上限从 120/分钟提升至 1200/分钟（上游仍受安全节流保护）；\n3. 完整包含 1.0.148~1.0.149 全剧滚存秒拖、三槽真接管及分集滚轮优化。",
+      "level": "warning",
+      "placement": "all",
+      "publishedAt": "2026-11-27T02:22:40Z",
+      "linkLabel": "查看 1.0.150 更新详情",
+      "linkUrl": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.150"
+    },
+    {
       "id": "win-1-0-149-wheel-cursor-fix",
       "title": "Windows 1.0.149 已发布 · 修复推荐鼠标光标、滚轮失效及分集滚轮逻辑",
       "summary": "取消推荐区常驻小手光标，修复环形播放容器滚轮拦截问题，并实现第 1 集滚轮切剧、第 2 集起滚轮自动换集。",
@@ -89,5 +100,5 @@
       "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.27"
     }
   ],
-  "updatedAt": "2026-11-27T02:10:26Z"
+  "updatedAt": "2026-11-27T02:22:40Z"
 }
