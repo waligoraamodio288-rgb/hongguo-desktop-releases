@@ -2,6 +2,17 @@
   "app_id": "cn.guoban.desktop-companion",
   "announcements": [
     {
+      "id": "win-1-0-149-wheel-cursor-fix",
+      "title": "Windows 1.0.149 已发布 · 修复推荐鼠标光标、滚轮失效及分集滚轮逻辑",
+      "summary": "取消推荐区常驻小手光标，修复环形播放容器滚轮拦截问题，并实现第 1 集滚轮切剧、第 2 集起滚轮自动换集。",
+      "body": "本版本针对 1.0.148 快速修复并优化推荐刷剧交互：\n1. 移除推荐画面常驻小手光标，仅拖拽时显示抓手；\n2. 修复三槽环形容器及黑边区域滚轮失效问题；\n3. 调整为第 1 集时滚轮切剧、进入第 2 集起滚轮自动换集，避免追剧时误滑切走当前剧目。",
+      "level": "warning",
+      "placement": "all",
+      "publishedAt": "2026-11-27T02:10:26Z",
+      "linkLabel": "查看 1.0.149 更新详情",
+      "linkUrl": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.149"
+    },
+    {
       "id": "win-1-0-148-recommend-stream-upgrade",
       "title": "Windows 1.0.148 重大流畅度升级已发布 · 全剧滚存秒拖 + 三槽真接管",
       "summary": "新增 CENC 全剧有界流式缓冲（进度条任意位置秒拖）、6 项批量 multi_video_model 预取、三槽环形预解码原地 DOM 无损接管及剩余 12 部提前续载，建议一键自动更新。",
@@ -78,5 +89,5 @@
       "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.27"
     }
   ],
-  "updatedAt": "2026-11-27T01:54:14Z"
+  "updatedAt": "2026-11-27T02:10:26Z"
 }
