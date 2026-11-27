@@ -2,13 +2,13 @@
   "app_id": "cn.guoban.desktop-companion",
   "announcements": [
     {
-      "id": "tv-release-0.5.18",
-      "title": "红果电视端 0.5.18 重大更新 · 播放恢复、扫码同步、沉浸推荐、弹幕与自动更新",
-      "body": "Android TV / 电视盒子版已更新至 0.5.18（ARM32 2.78 MB / ARM64 10.13 MB）：1. 同步最新 V5 主片源播放恢复，延续低内存护航；2. 左侧新增桌面同款沉浸式「✦ 推荐」与首页题材偏好设置；3. 支持手机红果 App 扫码登录，同步云端收藏与观看历史并结合账号偏好推荐；4. 新增极简低开销电视弹幕与开关调节；5. 支持闲时后台自动更新与原版签名校验，首页与播放页新增自愿打赏入口。",
+      "id": "tv-release-0.5.19",
+      "title": "红果电视端 0.5.19 修复版已发布 · 修复 32 位播放报错与扫码登录识别",
+      "body": "Android TV / 电视盒子版已更新至 0.5.19（ARM32 8.69 MB / ARM64 10.15 MB）：1. 针对 32 位老电视内置轻量化 ARM64 指令仿真引擎执行 V5 取流签名，修复「主片源暂未返回，备用源不含本集」无法播放问题；2. 改用本地 ISO/IEC 18004 纯黑白无 Logo 高对比二维码并补全 HTTP Date 校时与到期自动刷新，解决手机红果 App 扫码识别不到或失效问题；3. 保留「✦ 推荐」连刷、云端收藏/历史同步、极简弹幕与闲时自动更新。",
       "level": "info",
-      "publishedAt": 1795775706,
-      "expiresAt": 1798367706,
-      "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/tv-v0.5.18"
+      "publishedAt": 1795780781,
+      "expiresAt": 1798372781,
+      "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/tv-v0.5.19"
     },
     {
       "id": "notice-1.0.152-series-episodes-social",
@@ -122,5 +122,5 @@
       "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.28"
     }
   ],
-  "updatedAt": "2026-11-27T10:35:06Z"
+  "updatedAt": "2026-11-27T11:59:41Z"
 }

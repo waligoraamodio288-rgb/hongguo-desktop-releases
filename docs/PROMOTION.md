@@ -9,9 +9,9 @@
 ## Mac 1.0.143 更新 · Apple Silicon + Intel 全系双架构原生重塑
 
 > 红果免费短剧 macOS 桌面版迎来 **1.0.141 重大更新**：同步 Windows 1.0.141 核心功能（全站新设计系统、零转码直连与瞬切推荐），按 Apple 人机界面规范重做融合标题栏、原生深/浅毛玻璃侧栏、顶部菜单栏与全套 `⌘` 快捷键（`⌘K` 命令面板、`⌘F` 保播检索、`⌘,` 居中设置弹窗、`⌘⇧D` 深浅外观切换），并**首次完整兼容 Apple Silicon（M1–M4）与 Intel（x86_64）双架构**（macOS 13.0+）。[Mac 双架构安装指南](../MAC.md) · [mac-v1.0.143 发布页与校验](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.143)
-## Android TV 0.5.18 重大更新 · 播放恢复、扫码同步、沉浸推荐、极简弹幕与自动更新
+## Android TV 0.5.19 修复版 · 修复 32 位 V5 播放报错与纯黑白扫码登录识别
 
-> 红果电视端迎来 **0.5.18 重大更新**（Android 5.0+，提供 ARMv7 32 位与 ARM64 双架构）：同步 V5 主片源播放恢复，新增桌面同款沉浸式「✦ 推荐」与首页推荐偏好设置、红果官方扫码登录与云端收藏/历史同步（推荐结合账号常看题材）、极简低开销单画布电视弹幕、闲时后台自动更新校验，以及首页与播放页自愿支持作者入口。[Android TV 安装指南与图文](../TV.md) · [tv-v0.5.18 发布页与校验](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/tv-v0.5.18)
+> 红果电视端迎来 **0.5.19 关键修复版**（Android 5.0+，提供 ARMv7 32 位与 ARM64 双架构）：为 32 位包（`arm32`）内置轻量化 Unicorn ARM64 仿真引擎修复 V5 主片源起播报错，并改用本地纯黑白无 Logo 高对比二维码与服务器校时自动刷新修复手机红果 App 扫码登录识别；同时保留沉浸式「✦ 推荐」、推荐偏好、云端同步、极简弹幕、闲时自动更新与自愿打赏入口。[Android TV 安装指南与图文](../TV.md) · [tv-v0.5.19 发布页与校验](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/tv-v0.5.19)
 
 ## Windows 摸鱼播放 · 小窗常驻，小电视随鼠标开合
 
@@ -27,7 +27,7 @@
 
 红果桌面端由渠道有数独立维护，适用于 Windows 10/11 x64。它把找剧、收藏、选集与续看放在同一个电脑窗口中。老板键默认 Ctrl+Shift+B，隐藏时暂停、恢复后保留原位置与倍速；原本手动暂停的内容保持暂停。
 
-当前 Windows 正式版为 1.0.141，Mac 双架构版为 1.0.141，Android TV 版为 0.5.18。分享时请使用[固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)。
+当前 Windows 正式版为 1.0.141，Mac 双架构版为 1.0.141，Android TV 版为 0.5.19。分享时请使用[固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)。
 
 项目另有 Mac（Apple Silicon + Intel 双架构，macOS 13.0+）与 Android TV 测试版，系统要求和功能范围各自独立。它不是红果短剧官方出品；应用完整源码未公开。下载不需要关注、回帖或私信取包。
 
@@ -87,3 +87,9 @@
 ![红果电视端 0.5.18 播放与推荐界面](../assets/tv-player-v0.5.18.png)
 
 以上 2 张截图为 **Android TV 0.5.18 在小米 Android 13 平板实拍**（非实体旧电视验收），转载时请保留版本标注与「渠道有数」署名；图中剧目封面归各自权利方所有。
+
+### Android TV 0.5.19 扫码页实拍素材
+
+![红果电视端 0.5.19 纯黑白高对比扫码登录界面](../assets/tv-qr-v0.5.19.png)
+
+以上截图为 **Android TV 0.5.19（32 位进程）在小米 Android 13 平板实拍**（非实体旧电视验收），转载时请保留版本标注与「渠道有数」署名。

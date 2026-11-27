@@ -1,6 +1,6 @@
 # 红果电视端：用遥控器看短剧，不喜欢就换一部
 
-由 **渠道有数** 独立维护 · 免费使用 · **0.5.18 重大更新**
+由 **渠道有数** 独立维护 · 免费使用 · **0.5.19 关键修复与更新**
 
 **[渠道有数网站](https://shiyuemenghui.top/?utm_source=github&utm_medium=readme&utm_campaign=custom_domain)** · [安装帮助](https://shiyuemenghui.top/help/install/?utm_source=github&utm_medium=readme&utm_campaign=custom_domain)
 
@@ -8,13 +8,14 @@
 
 **国内免梯子直连通道**：[腾讯文档统一导航卡（微信直开）](https://docs.qq.com/doc/DUkFVbUNJQnhtVkd6) · [百度网盘永久分流（提取码 `3kx4`）](https://pan.baidu.com/s/1rgL9oqPRH7BSLxXDV29feA?pwd=3kx4) · [Gitee 国内镜像页](https://gitee.com/wang-jue12342/hongguo-desktop-releases)
 
-**[下载32位 ARMv7 · 2.78 MB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/tv-v0.5.18/HongguoTV-0.5.18-arm32.apk)**　｜　**[下载64位 ARM64 · 10.13 MB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/tv-v0.5.18/HongguoTV-0.5.18-arm64.apk)**　｜　[发行说明与校验](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/tv-v0.5.18)
+**[下载32位 ARMv7 · 8.69 MB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/tv-v0.5.19/HongguoTV-0.5.19-arm32.apk)**　｜　**[下载64位 ARM64 · 10.15 MB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/tv-v0.5.19/HongguoTV-0.5.19-arm64.apk)**　｜　[发行说明与校验](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/tv-v0.5.19)
 
 适用于 Android 5.0+ 的电视、盒子、投影和平板。32 位系统选择 ARMv7（`arm32`），64 位系统选择 ARM64（`arm64`）；以系统支持的 ABI 为准，不按芯片宣传位数判断。
 
-## 0.5.18 重大更新：播放恢复、扫码同步、沉浸推荐、极简弹幕与自动更新
+## 0.5.19 关键修复与更新：32 位播放修复、扫码登录优化及桌面同款大屏体验
 
-- **主片源播放恢复**：同步最新 V5 播放取流与解密协议，修复主片源不可播问题。
+- **32 位电视（`arm32`）主片源播放修复**：内置轻量化 ARM64 指令仿真引擎（Unicorn 2.1.4，精简仅保留 `aarch64`），在 32 位系统进程内直接执行官方 V5 取流签名，解决「`主片源暂未返回，备用源不含本集，请稍后重试`」问题，并在系统低内存时自动回收仿真缓冲区。
+- **纯黑白高对比扫码登录修复**：改用本地 ISO/IEC 18004 纯黑白二维码绘制（零居中 Logo、4 格纯白留白区、整数像素防模糊），补全 HTTP `Date` 服务器时间校准（抗电视时钟偏差）、过期自动刷新与完整登录会话 Cookie，支持使用手机「红果免费短剧」App 扫一扫。
 - **桌面同款「✦ 推荐」与个性化偏好**：左侧导航新增沉浸式「✦ 推荐」连续刷剧入口；首页推荐支持「均衡 / 热播 / 上新」排序、喜欢/不想看题材、类型偏好、长按不想看与 3+1 防信息茧房策略。
 - **红果官方扫码登录与账号同步**：顶部新增「扫码登录」，支持手机红果 App 扫码登录并同步云端收藏与观看历史（保守合并本机记录、写前校验保护进度）；已登录时推荐流会结合账号常看题材精准推送。
 - **极简电视弹幕**：原生单画布低开销弹幕渲染，播放控制栏一键切换「弹幕：开 / 关」，设置内提供显示、字号与密度三项简洁调节。
@@ -29,6 +30,10 @@
 
 *0.5.18 小米 Android 13 平板播放界面实拍，展示弹幕开关、不想看、推荐连看与右上角自愿支持入口。*
 
+![红果电视端 0.5.19 纯黑白高对比扫码登录界面](assets/tv-qr-v0.5.19.png)
+
+*0.5.19 小米 Android 13 平板 ARM32 进程实拍：本地 ISO/IEC 18004 纯黑白高对比二维码与手机「红果免费短剧」App 扫码引导（非老电视实机验收）。*
+
 ## 低性能电视适配说明
 
 继续保持单播放器、单媒体工作线程、两槽缓冲、单文件 32 MiB 上限与 64 KiB 分块下载；低内存模式海报缓存 2 MiB、自动最高 480p，内存紧张时取消预取并释放封面，不后台常驻转码服务。若某集仅提供高清晰度轨道，手动限制或低内存 480p 可能无法播放；性能充足且支持硬解的设备可在设置选择自动或 1080p。
@@ -38,11 +43,11 @@
 ## 应用内检查与自动更新
 
 - **0.5.2～0.5.12 的 64 位版**与 **0.5.6～0.5.12 的 32 位版**可在「设置 → 关于与帮助 → 检查更新」直接检测并下载 **0.5.18**（若旧版仅拉取第 1 页发行记录，推荐直接从本页链接下载或用新版本空闲自动更新）。**0.5.1 及以前版本**需手动覆盖安装一次。
-- **0.5.18 起**默认开启闲时后台自动下载，并在返回首页后弹窗提示安装；播放过程中不打断，下载后核验原版签名与 SHA-256 再交系统安装器确认。
+- **0.5.18 / 0.5.19 起**默认开启闲时后台自动下载，并在返回首页后弹窗提示安装；播放过程中不打断，下载后核验原版签名与 SHA-256 再交系统安装器确认。
 
 ## 三步安装
 
-1. 下载与系统架构匹配的 `HongguoTV-0.5.18-arm32.apk`（2.78 MB）或 `HongguoTV-0.5.18-arm64.apk`（10.13 MB）。32 位系统选 `armeabi-v7a`，64 位系统选 `arm64-v8a`；不确定时查看系统信息或反馈完整型号。
+1. 下载与系统架构匹配的 `HongguoTV-0.5.19-arm32.apk`（8.69 MB）或 `HongguoTV-0.5.19-arm64.apk`（10.15 MB）。32 位系统选 `armeabi-v7a`，64 位系统选 `arm64-v8a`；不确定时查看系统信息或反馈完整型号。
 2. 用 U 盘或设备文件传输把 APK 放到电视/盒子上，在文件管理器中打开安装。按设备正常提示授权本次安装。
 3. 已有同签名旧版可直接覆盖升级，保留本机收藏、历史、推荐偏好与已登录状态。
 
@@ -61,8 +66,8 @@
 
 ## 欢迎反馈真实设备体验
 
-目前已在小米 M2105K81AC / Android 13 平板 ARM64 与 ARM32 进程完成全部 11 项功能验收。实体电视、盒子与投影的实际使用情况需要逐台记录。
+目前已在小米 M2105K81AC / Android 13 平板 ARM32 与 ARM64 双进程完成 V5 主片源起播、纯黑白扫码登录、推荐偏好、弹幕、打赏、自动更新及 API 21 兼容性审计。实体电视、盒子与投影的实际使用情况需要逐台记录。
 
 无论能否正常使用，都可以填[电视版反馈表](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/issues/new?template=android-tv.yml)：设备型号、Android 版本、能否安装、实体遥控、首播音画、弹幕及扫码同步情况。无需提交账号密码或个人隐私。
 
-分享时请保留 **渠道有数** 署名与[原发行链接](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/tv-v0.5.18)。应用「设置 → 关于与帮助」可以核对来源。想在电脑上看，可下载 [Windows 版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)。
+分享时请保留 **渠道有数** 署名与[原发行链接](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/tv-v0.5.19)。应用「设置 → 关于与帮助」可以核对来源。想在电脑上看，可下载 [Windows 版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)。
