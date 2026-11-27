@@ -2,6 +2,17 @@
   "app_id": "cn.guoban.desktop-companion",
   "announcements": [
     {
+      "id": "win-1-0-151-cdn-redirect-fix",
+      "title": "Windows 1.0.151 紧急修复版已发布 · 修复切剧偶发「播放中断」问题",
+      "summary": "修复部分剧集 CDN HTTP 302 边缘跳转节点被安全白名单误拦导致的「播放中断，请重试当前集」，建议立即自动更新。",
+      "body": "本版本定位并彻底修复推荐连刷切剧时弹出「播放中断，请重试当前集」的元凶：\n1. 修复字节 VOD CDN 302 边缘节点域名被拦截问题，在严格屏蔽内网/回环 IP 防 SSRF 的前提下放行合法公网 HTTPS 边缘节点；\n2. 同步修复 CENC 代理与渐进读取重定向循环复检问题，并继承 1.0.148~1.0.150 全部流畅度与滚轮优化。",
+      "level": "warning",
+      "placement": "all",
+      "publishedAt": "2026-11-27T02:37:24Z",
+      "linkLabel": "查看 1.0.151 更新详情",
+      "linkUrl": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.151"
+    },
+    {
       "id": "win-1-0-150-fix-local-429",
       "title": "Windows 1.0.150 紧急修复版已发布 · 彻底解决连刷切剧 HTTP 429 报错",
       "summary": "解除本机回环流媒体路由（/desktop/cenc/*、/desktop/hls）的 120/分钟误限流，连续快速切剧与并发预热不再出现「创建播放任务失败（HTTP 429）」，建议立即自动更新。",
@@ -89,16 +100,7 @@
       "publishedAt": 1794661208,
       "expiresAt": 1795870808,
       "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.28"
-    },
-    {
-      "id": "windows-release-1.0.27",
-      "title": "1.0.27 免费体验：电脑追剧，接着上次看",
-      "body": "改善部分播放取址与中断恢复，新增离线文件检查。本机已实测搜索、1080p 切集与重开续播。部分环境仍有搜索、播放失败反馈，请查看版本说明中的已知问题；可在设置中检查更新。",
-      "level": "info",
-      "publishedAt": 1794549802,
-      "expiresAt": 1795759402,
-      "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.27"
     }
   ],
-  "updatedAt": "2026-11-27T02:22:40Z"
+  "updatedAt": "2026-11-27T02:37:24Z"
 }
