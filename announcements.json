@@ -2,15 +2,15 @@
   "app_id": "cn.guoban.desktop-companion",
   "announcements": [
     {
-      "id": "win-1-0-146-feedback-polish",
-      "title": "Windows 1.0.146 专项修复版已发布 · 建议立即自动更新",
-      "summary": "重构离线批量重试（120+ 集秒提交不卡顿）、批量删除遇占用自动跳过续删、修复连播画质回退提示与覆盖升级残留，请点击「设置 → 更新」一键升级。",
-      "body": "本版本针对近期 Windows 反馈集中修复：\n1. 离线批量「重试失败」改为单次原子批处理，彻底解决 60–120 集卡死提示「离线列表暂未更新」及重试中点播冲突；\n2. 离线批量删除遇到外部程序持续占用时自动跳过并继续清理剩余剧集；\n3. 修复连续播放偶发「所选画质暂时无法播放」跨集回退与档位匹配，完成态提示 5 秒自动消隐；\n4. 安装器覆盖升级前自动清理旧版后端缓存，与卸载重装完全一致且 100% 保留数据。",
+      "id": "win-1-0-147-swipe-polish",
+      "title": "Windows 1.0.147 体验大升级已发布 · 推荐秒开与纵滑拖拽切剧",
+      "summary": "推荐主页自动预热实现秒开、支持鼠标/触摸上下拖拽 1:1 跟手切剧、滚轮冷却缩短至 340ms、支持画面长按 2× 倍速及进度条拖拽时间大标尺，建议一键自动更新。",
+      "body": "本版本全面对标竞品交互重构刷剧体验：\n1. 启动自动后台预热推荐首剧及 1 MiB 高码率首段缓存，点开即播；\n2. 新增上下拖拽 1:1 跟手切换（带下/上一部真实首帧与封面预览、橡皮筋阻尼与快速甩动吸附）；\n3. 滚轮连刷提速近 3 倍（340ms 冷却），支持画面长按 380ms 进入 2× 倍速播放；\n4. 拖动进度条新增悬浮时间定位大 HUD（目标时间/总长/±秒偏移）。",
       "level": "warning",
       "placement": "all",
-      "publishedAt": 1795700812,
-      "linkLabel": "查看 1.0.146 更新详情",
-      "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.146"
+      "publishedAt": "2026-11-27T01:20:50Z",
+      "linkLabel": "查看 1.0.147 更新详情",
+      "linkUrl": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.147"
     },
     {
       "id": "windows-release-1.0.145-feedback",
@@ -67,5 +67,5 @@
       "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.27"
     }
   ],
-  "updatedAt": "2026-11-26T13:46:52Z"
+  "updatedAt": "2026-11-27T01:20:50Z"
 }
