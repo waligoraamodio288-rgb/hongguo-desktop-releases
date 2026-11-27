@@ -17,9 +17,9 @@
       "body": "本次 1.0.152 版本参考桌面端高频追剧体验，重点升级三大核心互动模块：\n1. **系列剧多季与一键预约**：选集面板新增「系列剧」页签，展示全部季数与「预告」徽章，未上线季可直接一键预约/取消预约（登录红果账号同步手机预约并联动本机提醒），片尾待上线下一季与「其他季」选择器同步支持直连预约。\n2. **选集面板体验升级**：打开面板自动居中定位当前集，长剧 30 集分段跳转条随滚动实时高亮，输入跳集后提供「立即播放」快捷按钮。\n3. **评论互动全面升级**：支持评论/回复安全头像展示与楼中楼「回复 @昵称」标识、新增「最新发布」排序、播放器右侧「评论」按钮实时显示总评论数角标、扩充 24 个常用追剧表情、写评论展开自动聚焦输入框。",
       "level": "info",
       "placement": "all",
-      "publishedAt": "2026-11-27T09:07:00Z",
+      "publishedAt": 1795770420,
       "linkLabel": "查看 1.0.152 更新详情",
-      "linkUrl": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.152"
+      "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.152"
     },
     {
       "id": "win-1-0-151-cdn-redirect-fix",
