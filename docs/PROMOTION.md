@@ -9,7 +9,7 @@
 ## Mac 1.0.143 更新 · Apple Silicon + Intel 全系双架构原生重塑
 
 > 红果免费短剧 macOS 桌面版迎来 **1.0.141 重大更新**：同步 Windows 1.0.141 核心功能（全站新设计系统、零转码直连与瞬切推荐），按 Apple 人机界面规范重做融合标题栏、原生深/浅毛玻璃侧栏、顶部菜单栏与全套 `⌘` 快捷键（`⌘K` 命令面板、`⌘F` 保播检索、`⌘,` 居中设置弹窗、`⌘⇧D` 深浅外观切换），并**首次完整兼容 Apple Silicon（M1–M4）与 Intel（x86_64）双架构**（macOS 13.0+）。[Mac 双架构安装指南](../MAC.md) · [mac-v1.0.143 发布页与校验](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/mac-v1.0.143)
-## Android TV 0.5.20 修复版 · 修复 32 位 V5 播放报错与纯黑白扫码登录识别
+## Android TV 0.5.20 全面发布 · 修复 32 位播放与扫码登录，老版本应用内直接提示升级
 
 > 红果电视端迎来 **0.5.20 关键修复版**（Android 5.0+，提供 ARMv7 32 位与 ARM64 双架构）：为 32 位包（`arm32`）内置轻量化 Unicorn ARM64 仿真引擎修复 V5 主片源起播报错，并改用本地纯黑白无 Logo 高对比二维码与服务器校时自动刷新修复手机红果 App 扫码登录识别；同时已在 32 位实体电视实测可播可扫码；保留沉浸式「✦ 推荐」、推荐偏好、云端同步、极简弹幕、闲时自动更新与自愿打赏入口，64 位 `0.5.2–0.5.19` 与 32 位 `0.5.6–0.5.19` 旧版打开即自动提示升级。[Android TV 安装指南与图文](../TV.md) · [tv-v0.5.20 发布页与校验](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/tv-v0.5.20)
 
