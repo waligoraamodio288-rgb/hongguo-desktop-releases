@@ -2,13 +2,13 @@
   "app_id": "cn.guoban.desktop-companion",
   "announcements": [
     {
-      "id": "tv-release-0.5.19",
-      "title": "红果电视端 0.5.19 修复版已发布 · 修复 32 位播放报错与扫码登录识别",
-      "body": "Android TV / 电视盒子版已更新至 0.5.19（ARM32 8.69 MB / ARM64 10.15 MB）：1. 针对 32 位老电视内置轻量化 ARM64 指令仿真引擎执行 V5 取流签名，修复「主片源暂未返回，备用源不含本集」无法播放问题；2. 改用本地 ISO/IEC 18004 纯黑白无 Logo 高对比二维码并补全 HTTP Date 校时与到期自动刷新，解决手机红果 App 扫码识别不到或失效问题；3. 保留「✦ 推荐」连刷、云端收藏/历史同步、极简弹幕与闲时自动更新。",
+      "id": "tv-release-0.5.20",
+      "title": "红果电视端 0.5.20 修复版已发布 · 彻底修复扫码登录与支持 32 位播放",
+      "body": "Android TV / 电视盒子版已更新至 0.5.20（ARM32 8.69 MB / ARM64 10.15 MB）：1. 修复 `0.5.19` 二维码格式校验位转置与白底正方形框右侧裁切两处缺陷（已通过第三方 `jsQR` 整图直接解码还原官方登录链接），彻底解决手机红果 App 扫码识别失败；2. 延续 32 位系统内置轻量化 ARM64 指令仿真引擎执行 V5 主片源签名，修复老电视起播报错；3. 保留「✦ 推荐」连刷、云端收藏/历史同步、极简弹幕与闲时自动更新。",
       "level": "info",
-      "publishedAt": 1795780781,
-      "expiresAt": 1798372781,
-      "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/tv-v0.5.19"
+      "publishedAt": 1795782888,
+      "expiresAt": 1798374888,
+      "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/tv-v0.5.20"
     },
     {
       "id": "notice-1.0.152-series-episodes-social",
@@ -122,5 +122,5 @@
       "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.28"
     }
   ],
-  "updatedAt": "2026-11-27T11:59:41Z"
+  "updatedAt": "2026-11-27T12:34:48Z"
 }

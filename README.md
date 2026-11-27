@@ -29,7 +29,7 @@ Windows 10 / 11 **x64（64 位）**。安装包大小以发行页附件为准。
 | 你的设备 | 当前版本与入口 | 安装前确认 |
 | --- | --- | --- |
 | Windows 电脑 | [Windows 固定最新版](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest) | Windows 10/11 x64 |
-| Android 电视、盒子、投影 | [0.5.19 关键修复 · 选 ARM32 / ARM64](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/TV.md) | Android 5.0+，按系统架构选包 |
+| Android 电视、盒子、投影 | [0.5.20 关键修复 · 选 ARM32 / ARM64](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/TV.md) | Android 5.0+，按系统架构选包 |
 | Mac | [1.0.143 修复版 · Apple Silicon / Intel 双架构](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/blob/main/MAC.md) | M 系列 + Intel x86_64，macOS 13.0+，按芯片选包 |
 
 分享 Windows 下载请使用[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)；TV 和 Mac 请分享上方各自入口。无需关注、回帖或私信取包。
@@ -73,11 +73,11 @@ Windows 10 / 11 **x64（64 位）**。安装包大小以发行页附件为准。
 
 ## 电视、盒子、投影与平板
 
-**0.5.19 关键修复 · ARM32 / ARM64 · Android 5.0+**
+**0.5.20 关键修复 · ARM32 / ARM64 · Android 5.0+**
 
-**[下载32位 ARMv7 · 8.69 MB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/tv-v0.5.19/HongguoTV-0.5.19-arm32.apk)** ｜ **[下载64位 ARM64 · 10.15 MB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/tv-v0.5.19/HongguoTV-0.5.19-arm64.apk)** ｜ **[0.5.19 更新说明与校验](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/tv-v0.5.19)**
+**[下载32位 ARMv7 · 8.69 MB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/tv-v0.5.20/HongguoTV-0.5.20-arm32.apk)** ｜ **[下载64位 ARM64 · 10.15 MB](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/download/tv-v0.5.20/HongguoTV-0.5.20-arm64.apk)** ｜ **[0.5.20 更新说明与校验](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/tv-v0.5.20)**
 
-0.5.19 重点修复两项关键体验问题：1. 为 32 位系统（`arm32`）内置轻量化 ARM64 指令仿真引擎直接执行 V5 主片源签名，修复老电视起播报错「主片源暂未返回，备用源不含本集」；2. 改用本地 ISO/IEC 18004 纯黑白高对比无 Logo 二维码与服务器时间校准，修复手机红果 App 扫码识别不到及过早失效问题。并完整延续沉浸式「✦ 推荐」、推荐偏好、账号同步、极简弹幕、闲时自动更新与打赏支持入口。已在小米 Android 13 平板 ARM32 / ARM64 双进程完成实测，旧款物理电视仍待逐机反馈。
+0.5.20 重点修复两项关键体验问题：1. 为 32 位系统（`arm32`）内置轻量化 ARM64 指令仿真引擎直接执行 V5 主片源签名，修复老电视起播报错「主片源暂未返回，备用源不含本集」；2. 修正本地 ISO/IEC 18004 二维码格式校验位行列索引并锁定正方形白框防止宽屏下右侧裁切（已通过第三方 `jsQR` 整图直接解码验证），彻底解决手机红果 App 扫不出或失效问题。并完整延续沉浸式「✦ 推荐」、推荐偏好、账号同步、极简弹幕、闲时自动更新与打赏支持入口。已在小米 Android 13 平板 ARM32 / ARM64 双进程完成实测，旧款物理电视仍待逐机反馈。
 
 继续保持单播放器、单媒体工作线程、两槽缓存、单文件 32 MiB 上限及 64 KiB 分块下载；低内存自动最高 480p，内存紧张时取消预取并释放封面，不增加后台转码服务。若某集只有高清轨道，手动限制 720p 或低内存 480p 可能无法播放；性能充足且硬解支持的设备可尝试自动或 1080p。
 
@@ -125,7 +125,7 @@ Windows 10 / 11 **x64（64 位）**。安装包大小以发行页附件为准。
 
 Windows 用户可先在设置里核对版本，再到[固定最新版入口](https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/latest)查看当前版本和安装包。更新后仍失败，请按上面的“播放中断时”步骤反馈版本、屏幕提示和换剧结果。
 
-电视、盒子和平板请使用上方 Android TV 入口；真人剧、漫剧和 AI剧（AI 剧）分类独立，当前 0.5.19 提供 ARM32 与 ARM64 两种安装包。Windows 安装程序不能安装到电视。
+电视、盒子和平板请使用上方 Android TV 入口；真人剧、漫剧和 AI剧（AI 剧）分类独立，当前 0.5.20 提供 ARM32 与 ARM64 两种安装包。Windows 安装程序不能安装到电视。
 
 ## 版本变化与已知反馈
 
