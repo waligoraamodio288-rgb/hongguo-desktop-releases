@@ -2,6 +2,18 @@
   "app_id": "cn.guoban.desktop-companion",
   "announcements": [
     {
+      "id": "windows-1-0-152-playback-stability-upgrade",
+      "title": "Windows 1.0.152 播放稳定性更新",
+      "summary": "旧版在连续切剧或片源地址跳转时可能出现播放中断，请升级至 1.0.152。",
+      "body": "如果你仍在使用旧版，连续切剧或遇到片源地址跳转时可能出现播放中断。请升级至 Windows 1.0.152，获取相关播放修复。点击下方链接打开更新下载页，也可在软件内「设置 → 软件更新」检查更新。",
+      "level": "warning",
+      "placement": "all",
+      "publishedAt": 1795862914,
+      "expiresAt": 1797072514,
+      "linkLabel": "前往 1.0.152 更新",
+      "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.152"
+    },
+    {
       "id": "tv-release-0.5.20",
       "title": "红果电视端 0.5.20 全面发布 · 真电视实测可播可扫码，老版本应用内已提示升级",
       "body": "Android TV / 电视盒子版已更新至 0.5.20（ARM32 8.69 MB / ARM64 10.15 MB），已在 32 位实体电视实测确认正常起播且手机红果 App 扫码登录成功！1. 彻底修复 0.5.19 二维码格式校验位转置与白框右侧裁切缺陷；2. 32 位包内置轻量化 ARM64 仿真引擎直接执行 V5 主片源签名；3. 已安装 0.5.2–0.5.19（64 位）或 0.5.6–0.5.19（32 位）的用户打开电视端即可直接收到升级提示一键更新。",
@@ -122,5 +134,5 @@
       "url": "https://github.com/waligoraamodio288-rgb/hongguo-desktop-releases/releases/tag/v1.0.28"
     }
   ],
-  "updatedAt": "2026-11-27T12:51:45Z"
+  "updatedAt": "2026-11-28T10:48:34Z"
 }
